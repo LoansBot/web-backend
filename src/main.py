@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Response, status
 from lblogging import Level
-from logging import LOGGER
+from constants import LOGGER
 
 app = FastAPI()  # noqa
 logger = LOGGER.with_iden('main.py')  # noqa
