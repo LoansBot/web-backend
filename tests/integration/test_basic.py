@@ -6,6 +6,7 @@ import os
 
 HOST = os.environ['TEST_WEB_HOST']
 
+
 class BasicResponseTests(unittest.TestCase):
     def test_root_gives_200(self):
         r = requests.get(HOST)
