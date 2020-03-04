@@ -117,9 +117,9 @@ jobs:
       run: |
         working/scripts/stop_server.sh
         echo "Program log 1:"
-        cat working/src/program-1.log
+        cat working/src/program-0.log
         echo "Program log 2:"
-        cat working/src/program-2.log
+        cat working/src/program-1.log
         echo "Supervisord log:"
         cat working/src/supervisord.log
         echo "Supervisord pid:"
