@@ -20,6 +20,7 @@ Jinja2==2.11.1
 MarkupSafe==1.1.1
 mccabe==0.6.1
 promise==2.3
+pika==1.1.0
 pycodestyle==2.5.0
 pydantic==1.4
 pyflakes==2.1.1
