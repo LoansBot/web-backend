@@ -14,4 +14,5 @@ def root():
 @app.get("/test_log")
 def test_log():
     logger.print(Level.TRACE, 'test_log')
+    logger.connection.commit()
     return Response(status_code=status.HTTP_200_OK)
