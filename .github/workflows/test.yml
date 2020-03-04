@@ -105,6 +105,8 @@ jobs:
         AMQP_PASSWORD: guest
         AMQP_VHOST: /
         AMQP_QUEUE: rproxy
+        MEMCACHED_HOST: localhost
+        MEMCACHED_PORT: ${{ job.services.memcached.ports[11211] }}
         PYTHON_ARGS: -u
     - name: Run integration tests
       working-directory: ./working/tests
