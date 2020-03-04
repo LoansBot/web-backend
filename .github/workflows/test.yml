@@ -104,7 +104,7 @@ jobs:
         AMQP_USERNAME: guest
         AMQP_PASSWORD: guest
         AMQP_VHOST: /
-        AMQP_QUEUE: rproxy
+        AMQP_REDDIT_PROXY_QUEUE: rproxy
         MEMCACHED_HOST: localhost
         MEMCACHED_PORT: ${{ job.services.memcached.ports[11211] }}
         PYTHON_ARGS: -u
