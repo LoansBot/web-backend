@@ -111,7 +111,7 @@ jobs:
       run: |
         python -m unittest discover -s integration
       env:
-        TEST_WEB_HOST: localhost
+        TEST_WEB_HOST: http://localhost:8000
     - name: Shutdown server
       if: always()
       run: |
