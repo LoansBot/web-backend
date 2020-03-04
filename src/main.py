@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Response, status
 from lblogging import Level
-from constants import LOGGER, MEMCACHED as cache, AMQP as amqp, AMQP_CHANNEL as channel
+from constants import LOGGER, MEMCACHED as cache, AMQP_CHANNEL as channel
 import json
 import secrets
 
