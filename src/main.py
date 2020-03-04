@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Response, status
-from lblogging import Logger, Level
+from lblogging import Level
 from logging import LOGGER
 
 app = FastAPI()  # noqa

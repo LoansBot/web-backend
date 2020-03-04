@@ -1,6 +1,7 @@
 """Initializes the logger"""
-from lblogging import Logger
+from lblogging import Logger, Level
 from database import DATABASE
+import os
 
 
 def _init_logger():
