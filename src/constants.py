@@ -2,6 +2,7 @@
 from lblogging import Logger, Level
 import os
 from pymemcache.client import base as membase
+import psycopg2
 
 
 def _init_logger(database):
