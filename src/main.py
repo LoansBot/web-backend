@@ -39,7 +39,7 @@ def test_amqp():
             logger.connection.commit()
             return Response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         channel.basic_ack(method_frame.delivery_tag)
-        con_body = body.decode('utf-8')
+        con_body = body_bytes.decode('utf-8')
         break
     if con_body != pub_body:
         logger.print(Level.WARN, 'test_amqp expected response {} but got {}', pub_body, con_body)
