@@ -1,0 +1,28 @@
+version: 0.0
+os: linux
+files:
+  - source: src
+    destination: /webapps/lbapi/src
+  - source: logging/src
+    destination: /webapps/lbapi/src
+  - source: requirements.txt
+    destination: /webapps/lbapi
+  - source: logging/logging-requirements.txt
+    destination: /webapps/lbapi
+  - source: scripts
+    destination: /webapps/lbapi/scripts
+  - source: cfg
+    destination: /webapps/lbapi/cfg
+hooks:
+  BeforeInstall:
+    - location: scripts/before_install.sh
+      timeout: 180
+  AfterInstall:
+    - location: scripts/after_install.sh
+      timeout: 180
+  ApplicationStart:
+    - location: scripts/application_start.sh
+      timeout: 180
+  ApplicationStop:
+    - location: scripts/application_stop.sh
+      timeout: 180
