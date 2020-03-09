@@ -32,17 +32,26 @@ def test_cache():
 def test_amqp():
     channel.queue_declare(queue='hello')
     pub_body = secrets.token_urlsafe(16)
-    channel.basic_publish(exchange='', routing_key='hello', body=pub_body)
+    channel.basic_publish(
+        exchange='',
+        routing_key='hello',
+        body=pub_body.encode('utf-8'),
+        mandatory=True
+    )
     for method_frame, properties, body_bytes in channel.consume('hello', inactivity_timeout=1):
         if method_frame is None:
             logger.print(Level.WARN, 'test_amqp reached inactivity timeout')
             logger.connection.commit()
+            channel.cancel()
             return Response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         channel.basic_ack(method_frame.delivery_tag)
         con_body = body_bytes.decode('utf-8')
-        break
-    if con_body != pub_body:
-        logger.print(Level.WARN, 'test_amqp expected response {} but got {}', pub_body, con_body)
-        logger.connection.commit()
-        return Response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return Response(status_code=status.HTTP_200_OK)
+        if con_body != pub_body:
+            logger.print(
+                Level.WARN,
+                'test_amqp expected response {} but got {}',
+                pub_body, con_body
+            )
+            logger.connection.commit()
+        channel.cancel()
+        return Response(status_code=status.HTTP_200_OK)
