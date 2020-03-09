@@ -112,6 +112,7 @@ jobs:
         PYTHON_ARGS: -u
         WEBHOST: localhost
         WEBPORT: 8000
+        UVICORN_PATH: uvicorn
     - name: Run integration tests
       working-directory: ./working/tests
       run: |

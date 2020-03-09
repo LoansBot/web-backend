@@ -21,3 +21,4 @@ json-based and REST-inspired.
 - MEMCACHED_PORT: The port for the memcached server
 - WEBHOST: The host to bind on
 - WEBPORT: The port to bind on
+- UVICORN_PATH: The path to the uvicorn executable
