@@ -29,13 +29,17 @@ def _init_amqp():
             os.environ['AMQP_USERNAME'], os.environ['AMQP_PASSWORD']
         )
     )
-    amqp = pika.BlockingConnection(parameters)
-    amqp.confirm_delivery()
-    return amqp
+    return pika.BlockingConnection(parameters)
+
+
+def _init_amqp_channel(amqp):
+    channel = amqp.channel()
+    channel.confirm_delivery()
+    return channel
 
 
 DATABASE = psycopg2.connect('')
 LOGGER = _init_logger(DATABASE)
 MEMCACHED = _init_memcached()
 AMQP = _init_amqp()
-AMQP_CHANNEL = AMQP.channel()
+AMQP_CHANNEL = _init_amqp_channel(AMQP)
