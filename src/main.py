@@ -53,5 +53,5 @@ def test_amqp():
                 pub_body, con_body
             )
             logger.connection.commit()
-    channel.cancel()
-    return Response(status_code=status.HTTP_200_OK)
+        channel.cancel()
+        return Response(status_code=status.HTTP_200_OK)
