@@ -42,6 +42,7 @@ def test_amqp():
         if method_frame is None:
             logger.print(Level.WARN, 'test_amqp reached inactivity timeout')
             logger.connection.commit()
+            channel.cancel()
             return Response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         channel.basic_ack(method_frame.delivery_tag)
         con_body = body_bytes.decode('utf-8')
@@ -52,4 +53,5 @@ def test_amqp():
                 pub_body, con_body
             )
             logger.connection.commit()
+    channel.cancel()
     return Response(status_code=status.HTTP_200_OK)
