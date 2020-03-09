@@ -29,7 +29,9 @@ def _init_amqp():
             os.environ['AMQP_USERNAME'], os.environ['AMQP_PASSWORD']
         )
     )
-    return pika.BlockingConnection(parameters)
+    amqp = pika.BlockingConnection(parameters)
+    amqp.confirm_delivery()
+    return amqp
 
 
 DATABASE = psycopg2.connect('')
