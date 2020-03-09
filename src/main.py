@@ -32,7 +32,12 @@ def test_cache():
 def test_amqp():
     channel.queue_declare(queue='hello')
     pub_body = secrets.token_urlsafe(16)
-    channel.basic_publish(exchange='', routing_key='hello', body=pub_body)
+    channel.basic_publish(
+        exchange='',
+        routing_key='hello',
+        body=pub_body.encode('utf-8'),
+        mandatory=True
+    )
     for method_frame, properties, body_bytes in channel.consume('hello', inactivity_timeout=1):
         if method_frame is None:
             logger.print(Level.WARN, 'test_amqp reached inactivity timeout')
