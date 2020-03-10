@@ -6,7 +6,6 @@ import secrets
 
 
 app = FastAPI()  # noqa
-logger = LOGGER.with_iden('main.py')  # noqa
 
 
 @app.get('/')
