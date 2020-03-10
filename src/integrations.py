@@ -12,8 +12,7 @@ def database():
 
 
 def logger():
-    conn = database()
-    logger = Logger(os.environ['APPNAME'], 'integrations.py', database)
+    logger = Logger(os.environ['APPNAME'], 'integrations.py', database())
     logger.prepare()
     return logger
 
