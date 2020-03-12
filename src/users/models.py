@@ -1,5 +1,4 @@
 """Contains the models that are used for users"""
-import typing
 from pydantic import BaseModel
 
 
@@ -10,6 +9,7 @@ class PasswordAuthentication(BaseModel):
     password: str
     password_authentication_id: int = None
     recaptcha_token: str = None
+
 
 class TokenAuthentication(BaseModel):
     """Describes a token authorization that the client can send to the server
