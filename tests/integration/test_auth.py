@@ -168,7 +168,7 @@ class AuthTests(unittest.TestCase):
             r.raise_for_status()
             self.assertEqual(r.status_code, 200)
 
-            body = r.body()
+            body = r.json()
             self.assertIsInstance(body, dict)
             self.assertIsInstance(body.get('username'), str)
             self.assertEqual(len(body), 1)
