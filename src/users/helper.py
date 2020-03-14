@@ -153,7 +153,7 @@ def create_token_from_passauth(conn, cursor, passauth_id: int) -> models.TokenRe
         (authtoken_id,)
     )
     conn.commit()
-    return models.TokenResponse(token=token, expires_at=expires_at.timestamp())
+    return models.TokenResponse(token=token, expires_at_utc=expires_at.timestamp())
 
 
 def create_new_user(conn, cursor, username: str, commit=True) -> int:
