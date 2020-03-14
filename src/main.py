@@ -8,7 +8,8 @@ import users.router
 
 app = FastAPI(
     title='RedditLoans',
-    description='See https://github.com/LoansBot'
+    description='See https://github.com/LoansBot',
+    openapi_url='openapi.json'  # we are removing the /
 )
 app.include_router(users.router.router, prefix='/users')
 
