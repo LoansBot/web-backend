@@ -1,4 +1,5 @@
 """Contains the models that are used for users"""
+from models import SuccessResponse
 from pydantic import BaseModel
 
 
@@ -17,7 +18,7 @@ class TokenAuthentication(BaseModel):
     token: str
 
 
-class TokenResponse(BaseModel):
+class TokenResponse(SuccessResponse):
     """Describes a token response that the server can provide to the client
     when they prove their identity using a non-token authorization so they
     can use token authentication in the future"""

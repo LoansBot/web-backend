@@ -145,3 +145,104 @@ def create_token_from_passauth(conn, passauth_id: int) -> models.TokenResponse:
     )
     conn.commit()
     return models.TokenResponse(token=token, expires_at=expires_at.timestamp())
+
+
+def create_new_user(conn, username: str, commit=True) -> int:
+    """Create a new user with the given username and return the id"""
+    users = Table('users')
+    conn.execute(
+        Query
+        .into(users)
+        .columns(users.username)
+        .insert(Parameter('%s'))
+        .returning(users.id)
+        .get_sql(),
+        (username,)
+    )
+    user_id = conn.fetchone()[0]
+    if commit:
+        conn.commit()
+    return user_id
+
+
+def create_claim_token(conn, user_id: int, commit=True) -> str:
+    """Creates and stores a new claim token for the given user, expiring in
+    a relatively short amount of time. Returns the generated token, which is
+    url-safe."""
+    claim_tokens = Table('claim_tokens')
+    conn.execute(
+        Query
+        .from_(claim_tokens)
+        .delete()
+        .where(claim_tokens.user_id == Parameter('%s'))
+        .get_sql(),
+        (user_id,)
+    )
+
+    token = secrets.token_urlsafe(47)  # 63 chars
+    expires_at = datetime.utcnow() + timedelta(hours=1)
+    conn.execute(
+        Query
+        .into(claim_tokens)
+        .columns(
+            claim_tokens.user_id,
+            claim_tokens.token,
+            claim_tokens.expires_at
+        )
+        .insert(
+            Parameter('%s'),
+            Parameter('%s'),
+            Parameter('%s')
+        )
+        .get_sql(),
+        (user_id, token, expires_at)
+    )
+    if commit:
+        conn.commit()
+    return token
+
+
+def attempt_consume_claim_token(conn, user_id: int, claim_token: str, commit=True) -> bool:
+    """Attempts to consume the given claim token for the given user. If the
+    claim token is in the database it will be deleted, but this will only
+    return True if the user id also matches."""
+    claim_tokens = Table('claim_tokens')
+    conn.execute(
+        Query
+        .from_(claim_tokens)
+        .delete()
+        .where(claim_tokens.token == Parameter('%s'))
+        .returning(claim_tokens.user_id)
+        .get_sql(),
+        (claim_token,)
+    )
+    row = conn.fetchone()
+    if row is None:
+        return False
+    if commit:
+        conn.commit()
+    return row[0] == user_id
+
+
+def create_or_update_human_password_auth(conn, user_id: int, passwd: str, commit=True) -> int:
+    """Creates or updates the human password authentication for the given
+    user. They are assigned no additional permissions."""
+    hash_name = 'sha512'
+    salt = secrets.token_urlsafe(23)  # 31 chars
+    iterations = 1000000
+    passwd_digest = pbkdf2_hmac(hash_name, passwd, salt, iterations)
+    conn.execute(
+        '''
+INSERT INTO password_authentications(user_id, human, hash_name, hash, salt, iterations)
+    VALUES(%s, %s, %s, %s, %s)
+ON CONSTRAINT ind_passw_auths_on_human_uid
+    DO UPDATE SET hash_name=%s, hash=%s, salt=%s, iterations=%s
+RETURNING id
+        ''',
+        (user_id, True, hash_name, passwd_digest, salt, iterations,
+         hash_name, passwd_digest, salt, iterations)
+    )
+    (passauth_id,) = conn.fetchone()
+    if commit:
+        conn.commit()
+    return passauth_id

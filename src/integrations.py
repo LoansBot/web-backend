@@ -9,7 +9,11 @@ from contextlib import contextmanager
 
 
 @contextmanager
-def database():
+def database(val=None):
+    if val is not None:
+        yield val
+        return
+
     conn = psycopg2.connect('')
     try:
         yield conn
@@ -18,7 +22,11 @@ def database():
 
 
 @contextmanager
-def logger(iden='integrations.py'):
+def logger(iden='integrations.py', val=None):
+    if val is not None:
+        yield val.with_iden(iden)
+        return
+
     with database() as conn:
         conn.autocommit = True
         logger = Logger(os.environ['APPNAME'], iden, conn)
@@ -27,7 +35,11 @@ def logger(iden='integrations.py'):
 
 
 @contextmanager
-def memcached():
+def memcached(val=None):
+    if val is not None:
+        yield val
+        return
+
     memcache_host = os.environ['MEMCACHED_HOST']
     memcache_port = int(os.environ['MEMCACHED_PORT'])
     client = membase.Client((memcache_host, memcache_port))
@@ -38,7 +50,11 @@ def memcached():
 
 
 @contextmanager
-def amqp():
+def amqp(val=None):
+    if val is not None:
+        yield val
+        return
+
     parameters = pika.ConnectionParameters(
         os.environ['AMQP_HOST'],
         int(os.environ['AMQP_PORT']),
