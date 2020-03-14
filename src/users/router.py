@@ -79,7 +79,9 @@ def logout(auth: models.TokenAuthentication):
         403: {'description': 'Token authentication failed'}
     }
 )
-def me(user_id: int, authtoken: str = Cookie()):
+def me(user_id: int, authtoken: str = Cookie(None)):
+    if authtoken is None:
+        return Response(status_code=403)
     with itgs.database() as conn:
         cursor = conn.cursor()
         info = helper.get_auth_info_from_token_auth(

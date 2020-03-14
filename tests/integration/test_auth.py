@@ -29,8 +29,10 @@ class AuthTests(unittest.TestCase):
         with helper.clear_tables(self.conn, self.cursor, ['users']):
             users = Table('users')
             self.cursor.execute(
-                Query.into(users).columns(users.username).values('testuser')
-                .returning(users.id).get_sql()
+                Query.into(users).columns(users.username)
+                .insert(Parameter('%s'))
+                .returning(users.id).get_sql(),
+                ('testuser',)
             )
             (user_id,) = self.cursor.fetchone()
             claim_tokens = Table('claim_tokens')
