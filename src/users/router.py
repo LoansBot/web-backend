@@ -123,7 +123,7 @@ def request_claim_token(username: models.Username):
             send_queue = os.environ['AMQP_REDDIT_PROXY_QUEUE']
             url_root = os.environ['ROOT_DOMAIN']
             channel.queue_declare(queue=send_queue)
-            token = uuid.uuid4()
+            token = str(uuid.uuid4())
             channel.basic_publish(
                 exchange='',
                 routing_key=send_queue,
