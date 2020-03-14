@@ -253,7 +253,7 @@ def create_or_update_human_password_auth(
         '''
 INSERT INTO password_authentications(user_id, human, hash_name, hash, salt, iterations)
     VALUES(%s, %s, %s, %s, %s, %s)
-ON CONSTRAINT ind_passw_auths_on_human_uid
+ON CONFLICT ON CONSTRAINT ind_passw_auths_on_human_uid
     DO UPDATE SET hash_name=%s, hash=%s, salt=%s, iterations=%s
 RETURNING id
         ''',
