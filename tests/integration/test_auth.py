@@ -204,6 +204,7 @@ class AuthTests(unittest.TestCase):
                 }
             )
             self.assertNotEqual(200, r.status_code)
+            self.assertLess(r.status_code, 500)
             pauths = Table('password_authentications')
             self.cursor.execute(
                 Query.from_(pauths).select(
@@ -254,6 +255,7 @@ class AuthTests(unittest.TestCase):
                 }
             )
             self.assertNotEqual(r.status_code, 200)
+            self.assertLess(r.status_code, 500)
 
 
 if __name__ == '__main__':
