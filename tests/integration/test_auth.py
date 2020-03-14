@@ -9,6 +9,7 @@ import psycopg2
 import helper
 from hashlib import pbkdf2_hmac
 from base64 import b64encode
+import time
 
 
 HOST = os.environ['TEST_WEB_HOST']
@@ -125,7 +126,9 @@ class AuthTests(unittest.TestCase):
             body = r.json()
             self.assertIsInstance(body, dict)
             self.assertIsInstance(body.get('token'), str)
-            self.assertEqual(1, len(body))
+            self.assertIsInstance(body.get('expires_at_utc'), float)
+            self.assertGreaterEqual(body['expires_at_utc'], time.time())
+            self.assertEqual(2, len(body))
 
             token = body['token']
             authtokens = Table('authtokens')
