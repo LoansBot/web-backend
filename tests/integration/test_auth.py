@@ -3,7 +3,7 @@ tokens)."""
 import unittest
 import requests
 import os
-from pypika import PostgreSQLQuery as Query, Table, Parameter
+from pypika import PostgreSQLQuery as Query, Table, Parameter, Interval
 from pypika.functions import Now
 import psycopg2
 import helper
@@ -141,7 +141,38 @@ class AuthTests(unittest.TestCase):
             self.assertIsNotNone(row)
             self.assertEqual(user_id, row[0])
 
-    # TODO: test /users/{user_id}/me with token auth
+    def test_authtoken_to_users_me(self):
+        with helper.clear_tables(self.conn, self.cursor, ['users']):
+            users = Table('users')
+            self.cursor.execute(
+                Query.into(users).columns(users.username)
+                .insert(Parameter('%s'))
+                .returning(users.id).get_sql(),
+                ('testuser',)
+            )
+            (user_id,) = self.cursor.fetchone()
+            authtokens = Table('authtokens')
+            self.cursor.execute(
+                Query.into(authtokens).columns(
+                    authtokens.user_id, authtokens.token, authtokens.expires_at
+                ).insert(Parameter('%s'), Parameter('%s'), Now() + Interval(hours=1))
+                .get_sql(),
+                (user_id, 'testtoken')
+            )
+            self.conn.commit()
+
+            r = requests.get(
+                f'{HOST}/users/{user_id}/me',
+                cookies={'authtoken': 'testtoken'}
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            body = r.body()
+            self.assertIsInstance(body, dict)
+            self.assertIsInstance(body.get('username'), str)
+            self.assertEqual(len(body), 1)
+            self.assertEqual(body['username'], 'testuser')
 
 
 if __name__ == '__main__':
