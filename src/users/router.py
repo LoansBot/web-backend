@@ -70,7 +70,7 @@ def logout(auth: models.TokenAuthentication):
 @router.post(
     '/request_claim_token',
     tags=['users', 'auth'],
-    status_code={
+    responses={
         200: {'description': 'Claim token sent'},
         400: {'description': 'Arguments invalid', 'model': main_models.ErrorResponse},
         429: {'description': 'You are doing that too much'}
@@ -150,7 +150,7 @@ def request_claim_token(username: str):
 @router.post(
     '/claim',
     tags=['users', 'auth'],
-    status_code={
+    responses={
         200: {'description': 'Password set', 'model': models.TokenResponse},
         400: {'description': 'Password invalid'},
         403: {'description': 'Invalid or expired claim token'},
