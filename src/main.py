@@ -10,7 +10,7 @@ app = FastAPI(
     title='RedditLoans',
     description='See https://github.com/LoansBot'
 )
-app.include_router(users.router, prefix='/users')
+app.include_router(users.router.router, prefix='/users')
 
 
 @app.get('/')
