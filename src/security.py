@@ -87,7 +87,7 @@ def ratelimit(cache, environ_key, key_prefix, defaults=None, logger=None) -> boo
                 )
 
     succ = True
-    for interval, max_num in settings:
+    for interval, max_num in settings.items():
         if interval <= 0 or max_num <= 0:
             with itgs.logger(iden='security.py', val=logger) as lgr:
                 lgr.print(
