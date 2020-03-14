@@ -46,7 +46,7 @@ class AuthTests(unittest.TestCase):
             self.conn.commit()
 
             r = requests.post(
-                f'{HOST}/claim',
+                f'{HOST}/users/claim',
                 json={
                     'user_id': user_id,
                     'claim_token': 'testtoken',
