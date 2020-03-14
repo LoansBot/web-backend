@@ -127,7 +127,6 @@ jobs:
         PGDATABASE: postgres
         PGUSER: postgres
         PGPASSWORD: dev
-      env:
         TEST_WEB_HOST: http://localhost:8000
     - name: Shutdown server
       if: always()
