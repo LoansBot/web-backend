@@ -174,6 +174,46 @@ class AuthTests(unittest.TestCase):
             self.assertEqual(len(body), 1)
             self.assertEqual(body['username'], 'testuser')
 
+    def test_failed_claim_token(self):
+        with helper.clear_tables(self.conn, self.cursor, ['users']):
+            users = Table('users')
+            self.cursor.execute(
+                Query.into(users).columns(users.username)
+                .insert(Parameter('%s'))
+                .returning(users.id).get_sql(),
+                ('testuser',)
+            )
+            (user_id,) = self.cursor.fetchone()
+            claim_tokens = Table('claim_tokens')
+            self.cursor.execute(
+                Query.into(claim_tokens)
+                .columns(claim_tokens.user_id, claim_tokens.token, claim_tokens.expires_at)
+                .insert(Parameter('%s'), Parameter('%s'), Now())
+                .get_sql(),
+                (user_id, 'testtoken')
+            )
+            self.conn.commit()
+
+            r = requests.post(
+                f'{HOST}/users/claim',
+                json={
+                    'user_id': user_id,
+                    'claim_token': 'testtoken2',
+                    'password': 'testpass',
+                    'recaptcha_token': 'notoken'
+                }
+            )
+            self.assertNotEqual(200, r.status_code)
+            pauths = Table('password_authentications')
+            self.cursor.execute(
+                Query.from_(pauths).select(
+                    pauths.user_id, pauths.human, pauths.hash_name,
+                    pauths.hash, pauths.salt, pauths.iterations
+                ).get_sql()
+            )
+            row = self.cursor.fetchone()
+            self.assertIsNone(row)
+
 
 if __name__ == '__main__':
     unittest.main()
