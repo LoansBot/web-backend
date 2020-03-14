@@ -19,7 +19,7 @@ def fixed_duration(duration: float):
     finally:
         elapsed = time.perf_counter() - start
         if elapsed < duration:
-            time.sleep(elapsed - duration)
+            time.sleep(duration - elapsed)
 
 
 def verify_recaptcha(token: typing.Optional[str]) -> bool:
