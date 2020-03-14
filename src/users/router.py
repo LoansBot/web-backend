@@ -30,13 +30,14 @@ router = APIRouter()
 )
 def login(auth: models.PasswordAuthentication):
     with itgs.database() as conn:
+        cursor = conn.cursor()
         auth_id = None
         with security.fixed_duration(0.5):
-            auth_id = helper.get_valid_passwd_auth(conn, auth)
+            auth_id = helper.get_valid_passwd_auth(conn, cursor, auth)
         if auth_id is None:
             return Response(status_code=403)
 
-        res = helper.create_token_from_passauth(conn, auth_id)
+        res = helper.create_token_from_passauth(conn, cursor, auth_id)
         return JSONResponse(status_code=200, content=res.dict())
 
 
@@ -50,12 +51,13 @@ def login(auth: models.PasswordAuthentication):
 )
 def logout(auth: models.TokenAuthentication):
     with itgs.database() as conn:
-        auth_id, user_id = helper.get_auth_info_from_token_auth(conn, auth)
+        cursor = conn.cursor()
+        auth_id, user_id = helper.get_auth_info_from_token_auth(conn, cursor, auth)
         if auth_id is None:
             return Response(status_code=403)
 
         authtokens = Table('authtokens')
-        conn.execute(
+        cursor.execute(
             Query
             .from_(authtokens)
             .delete()
@@ -103,19 +105,20 @@ def request_claim_token(username: models.Username):
 
     users = Table('users')
     with itgs.database() as conn:
-        conn.execute(
+        cursor = conn.cursor()
+        cursor.execute(
             Query.from_(users).select(users.id)
             .where(users.username == Parameter('%s'))
             .get_sql(),
             (username,)
         )
-        row = conn.fetchone()
+        row = cursor.fetchone()
         if row is None:
-            user_id = helper.create_new_user(conn, username, commit=False)
+            user_id = helper.create_new_user(conn, cursor, username, commit=False)
         else:
             user_id = row[0]
 
-        token = helper.create_claim_token(conn, user_id, commit=True)
+        token = helper.create_claim_token(conn, cursor, user_id, commit=True)
         with itgs.amqp() as (amqp, channel):
             send_queue = os.environ['AMQP_REDDIT_PROXY_QUEUE']
             url_root = os.environ['ROOT_DOMAIN']
@@ -195,9 +198,10 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
             return Response(status_code=429)
 
     with itgs.database() as conn:
-        if not helper.attempt_consume_claim_token(conn, args.user_id, args.claim_token):
+        cursor = conn.cursor()
+        if not helper.attempt_consume_claim_token(conn, cursor, args.user_id, args.claim_token):
             return Response(status_code=403)
         helper.create_or_update_human_password_auth(
-            conn, args.user_id, args.password
+            conn, cursor, args.user_id, args.password
         )
     return Response(status_code=200)

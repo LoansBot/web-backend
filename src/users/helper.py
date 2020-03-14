@@ -9,19 +9,20 @@ import secrets
 
 
 def get_valid_passwd_auth(
-        conn, auth: models.PasswordAuthentication) -> typing.Optional[int]:
+        conn, cursor,
+        auth: models.PasswordAuthentication) -> typing.Optional[int]:
     """Gets the id of the password_authentication that is correctly identified
     in the given object if there is one, otherwise returns null. Note that this
     may be sensitive to timing attacks which can be mitigated with sleeps."""
     users = Table('users')
     auths = Table('password_authentications')
-    conn.execute(
+    cursor.execute(
         Query.from_(users).select(users.id)
         .where(users.username == Parameter('%s'))
         .limit(1).get_sql(),
         (auth.username,)
     )
-    row = conn.fetchone()
+    row = cursor.fetchone()
     if row is None:
         return None
     (user_id,) = row
@@ -39,8 +40,8 @@ def get_valid_passwd_auth(
             .where(auths.human == 't')
         )
 
-    conn.execute(query.get_sql())
-    row = conn.fetchone()
+    cursor.execute(query.get_sql())
+    row = cursor.fetchone()
     if row is None:
         return None
 
@@ -55,7 +56,7 @@ def get_valid_passwd_auth(
 
 
 def get_auth_info_from_token_auth(
-        conn, auth: models.TokenAuthentication) -> typing.Optional[
+        conn, cursor, auth: models.TokenAuthentication) -> typing.Optional[
             typing.Tuple[int, int]]:
     """Get the id of the user meeting the given criteria if there is one. This
     will rollback the connection prior to starting, since it will need to
@@ -65,7 +66,7 @@ def get_auth_info_from_token_auth(
     conn.rollback()
 
     auths = Table('authtokens')
-    conn.execute(
+    cursor.execute(
         Query
         .from_(auths)
         .select(auths.id, auths.user_id, auths.expires_at)
@@ -74,13 +75,13 @@ def get_auth_info_from_token_auth(
         .get_sql(),
         (auth.token,)
     )
-    row = conn.fetchone()
+    row = cursor.fetchone()
     if row is None:
         return None
     authid, user_id, expires_at = row
     now = datetime.utcnow()
     if expires_at < now:
-        conn.execute(
+        cursor.execute(
             Query
             .from_(auths)
             .delete()
@@ -91,7 +92,7 @@ def get_auth_info_from_token_auth(
         conn.commit()
         return None
 
-    conn.execute(
+    cursor.execute(
         Query
         .update(auths)
         .set(auths.last_seen_at, ppfns.Now())
@@ -103,7 +104,7 @@ def get_auth_info_from_token_auth(
     return authid, user_id
 
 
-def create_token_from_passauth(conn, passauth_id: int) -> models.TokenResponse:
+def create_token_from_passauth(conn, cursor, passauth_id: int) -> models.TokenResponse:
     """Creates a fresh authentication token from the given password auth, and
     returns the token. This updates the last seen at for the password auth"""
     pauths = Table('password_authentications')
@@ -113,7 +114,7 @@ def create_token_from_passauth(conn, passauth_id: int) -> models.TokenResponse:
 
     token = secrets.token_urlsafe(95)  # gives 127 characters
     expires_at = datetime.utcnow() + timedelta(days=1)
-    conn.execute(
+    cursor.execute(
         Query
         .into(authtokens)
         .columns(authtokens.user_id, authtokens.token, authtokens.expires_at)
@@ -124,8 +125,8 @@ def create_token_from_passauth(conn, passauth_id: int) -> models.TokenResponse:
         .get_sql(),
         (token, expires_at, passauth_id)
     )
-    (authtoken_id,) = conn.fetchone()
-    conn.execute(
+    (authtoken_id,) = cursor.fetchone()
+    cursor.execute(
         Query
         .update(pauths)
         .set(pauths.last_seen, ppfns.Now())
@@ -133,7 +134,7 @@ def create_token_from_passauth(conn, passauth_id: int) -> models.TokenResponse:
         .get_sql(),
         (passauth_id,)
     )
-    conn.execute(
+    cursor.execute(
         Query
         .into(authtoken_perms)
         .columns(authtoken_perms.authtoken_id, authtoken_perms.permission_id)
@@ -147,10 +148,10 @@ def create_token_from_passauth(conn, passauth_id: int) -> models.TokenResponse:
     return models.TokenResponse(token=token, expires_at=expires_at.timestamp())
 
 
-def create_new_user(conn, username: str, commit=True) -> int:
+def create_new_user(conn, cursor, username: str, commit=True) -> int:
     """Create a new user with the given username and return the id"""
     users = Table('users')
-    conn.execute(
+    cursor.execute(
         Query
         .into(users)
         .columns(users.username)
@@ -159,18 +160,18 @@ def create_new_user(conn, username: str, commit=True) -> int:
         .get_sql(),
         (username,)
     )
-    user_id = conn.fetchone()[0]
+    user_id = cursor.fetchone()[0]
     if commit:
         conn.commit()
     return user_id
 
 
-def create_claim_token(conn, user_id: int, commit=True) -> str:
+def create_claim_token(conn, cursor, user_id: int, commit=True) -> str:
     """Creates and stores a new claim token for the given user, expiring in
     a relatively short amount of time. Returns the generated token, which is
     url-safe."""
     claim_tokens = Table('claim_tokens')
-    conn.execute(
+    cursor.execute(
         Query
         .from_(claim_tokens)
         .delete()
@@ -181,7 +182,7 @@ def create_claim_token(conn, user_id: int, commit=True) -> str:
 
     token = secrets.token_urlsafe(47)  # 63 chars
     expires_at = datetime.utcnow() + timedelta(hours=1)
-    conn.execute(
+    cursor.execute(
         Query
         .into(claim_tokens)
         .columns(
@@ -202,12 +203,13 @@ def create_claim_token(conn, user_id: int, commit=True) -> str:
     return token
 
 
-def attempt_consume_claim_token(conn, user_id: int, claim_token: str, commit=True) -> bool:
+def attempt_consume_claim_token(
+        conn, cursor, user_id: int, claim_token: str, commit=True) -> bool:
     """Attempts to consume the given claim token for the given user. If the
     claim token is in the database it will be deleted, but this will only
     return True if the user id also matches."""
     claim_tokens = Table('claim_tokens')
-    conn.execute(
+    cursor.execute(
         Query
         .from_(claim_tokens)
         .delete()
@@ -216,7 +218,7 @@ def attempt_consume_claim_token(conn, user_id: int, claim_token: str, commit=Tru
         .get_sql(),
         (claim_token,)
     )
-    row = conn.fetchone()
+    row = cursor.fetchone()
     if row is None:
         return False
     if commit:
@@ -224,14 +226,15 @@ def attempt_consume_claim_token(conn, user_id: int, claim_token: str, commit=Tru
     return row[0] == user_id
 
 
-def create_or_update_human_password_auth(conn, user_id: int, passwd: str, commit=True) -> int:
+def create_or_update_human_password_auth(
+        conn, cursor, user_id: int, passwd: str, commit=True) -> int:
     """Creates or updates the human password authentication for the given
     user. They are assigned no additional permissions."""
     hash_name = 'sha512'
     salt = secrets.token_urlsafe(23)  # 31 chars
     iterations = 1000000
     passwd_digest = pbkdf2_hmac(hash_name, passwd, salt, iterations)
-    conn.execute(
+    cursor.execute(
         '''
 INSERT INTO password_authentications(user_id, human, hash_name, hash, salt, iterations)
     VALUES(%s, %s, %s, %s, %s)
@@ -242,7 +245,7 @@ RETURNING id
         (user_id, True, hash_name, passwd_digest, salt, iterations,
          hash_name, passwd_digest, salt, iterations)
     )
-    (passauth_id,) = conn.fetchone()
+    (passauth_id,) = cursor.fetchone()
     if commit:
         conn.commit()
     return passauth_id
