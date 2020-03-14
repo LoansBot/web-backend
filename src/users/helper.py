@@ -258,8 +258,7 @@ ON CONFLICT (user_id, human)
 RETURNING id
         ''',
         (user_id, True, hash_name, passwd_digest, salt, iterations,
-         hash_name, passwd_digest, salt, iterations,
-         user_id, True)
+         hash_name, passwd_digest, salt, iterations)
     )
     (passauth_id,) = cursor.fetchone()
     if commit:
