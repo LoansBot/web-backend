@@ -121,6 +121,7 @@ jobs:
       working-directory: ./working/tests
       run: |
         python -m unittest discover -s integration
+      env:
         PGHOST: localhost
         PGPORT: ${{ job.services.postgres.ports['5432'] }}
         PGDATABASE: postgres
