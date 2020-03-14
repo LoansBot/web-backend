@@ -80,7 +80,64 @@ class AuthTests(unittest.TestCase):
             ).decode('ascii')
             self.assertEqual(row[3], exp_hash)
 
-    # TODO: test login with passwd auth
+    def test_passwd_auth_to_authtoken(self):
+        with helper.clear_tables(self.conn, self.cursor, ['users']):
+            users = Table('users')
+            self.cursor.execute(
+                Query.into(users).columns(users.username)
+                .insert(Parameter('%s'))
+                .returning(users.id).get_sql(),
+                ('testuser',)
+            )
+            (user_id,) = self.cursor.fetchone()
+            passwd_hsh = b64encode(
+                pbkdf2_hmac(
+                    'sha256',
+                    'testpass'.encode('utf-8'),
+                    'salt'.encode('utf-8'),
+                    10
+                )
+            ).decode('ascii')
+            pauths = Table('password_authentications')
+            self.cursor.execute(
+                Query.into(pauths).columns(
+                    pauths.user_id, pauths.human, pauths.hash_name,
+                    pauths.hash, pauths.salt, pauths.iterations
+                ).insert(
+                    Parameter('%s'), True, Parameter('%s'),
+                    Parameter('%s'), Parameter('%s'), Parameter('%s')
+                ).get_sql(),
+                (user_id, 'sha256', passwd_hsh, 'salt', 10)
+            )
+            self.conn.commit()
+            r = requests.post(
+                f'{HOST}/users/login',
+                json={
+                    'user_id': user_id,
+                    'username': 'testuser',
+                    'password': 'testpass',
+                    'recaptcha_token': 'notoken'
+                }
+            )
+            r.raise_for_status()
+            self.assertEquals(r.status_code, 200)
+
+            body = r.json()
+            self.assertIsInstance(body, dict)
+            self.assertIsInstance(body.get('token'), str)
+            self.assertEqual(1, len(body))
+
+            token = body['token']
+            authtokens = Table('authtokens')
+            self.cursor.execute(
+                Query.from_(authtokens).select(authtokens.user_id)
+                .where(authtokens.token == Parameter('%s')).get_sql(),
+                (token,)
+            )
+            row = self.cursor.fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(user_id, row[0])
+
     # TODO: test /users/{user_id}/me with token auth
 
 
