@@ -52,9 +52,10 @@ def login(auth: models.PasswordAuthentication):
 def logout(auth: models.TokenAuthentication):
     with itgs.database() as conn:
         cursor = conn.cursor()
-        auth_id, user_id = helper.get_auth_info_from_token_auth(conn, cursor, auth)
-        if auth_id is None:
+        info = helper.get_auth_info_from_token_auth(conn, cursor, auth)
+        if info is None:
             return Response(status_code=403)
+        auth_id = info[0]
 
         authtokens = Table('authtokens')
         cursor.execute(
