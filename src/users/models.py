@@ -30,6 +30,7 @@ class Username(BaseModel):
     """A username"""
     username: str
 
+
 class ClaimArgs(BaseModel):
     """Claim an account using a claim token, setting the human password to
     the given value"""
