@@ -16,7 +16,7 @@ HOST = os.environ['TEST_WEB_HOST']
 
 class AuthTests(unittest.TestCase):
     @classmethod
-    def setupClass(cls):
+    def setUpClass(cls):
         cls.conn = psycopg2.connect('')
         cls.cursor = cls.conn.cursor()
 
