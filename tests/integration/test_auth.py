@@ -214,6 +214,47 @@ class AuthTests(unittest.TestCase):
             row = self.cursor.fetchone()
             self.assertIsNone(row)
 
+    def test_failed_passwd_auth(self):
+        with helper.clear_tables(self.conn, self.cursor, ['users']):
+            users = Table('users')
+            self.cursor.execute(
+                Query.into(users).columns(users.username)
+                .insert(Parameter('%s'))
+                .returning(users.id).get_sql(),
+                ('testuser',)
+            )
+            (user_id,) = self.cursor.fetchone()
+            passwd_hsh = b64encode(
+                pbkdf2_hmac(
+                    'sha256',
+                    'testpass'.encode('utf-8'),
+                    'salt'.encode('utf-8'),
+                    10
+                )
+            ).decode('ascii')
+            pauths = Table('password_authentications')
+            self.cursor.execute(
+                Query.into(pauths).columns(
+                    pauths.user_id, pauths.human, pauths.hash_name,
+                    pauths.hash, pauths.salt, pauths.iterations
+                ).insert(
+                    Parameter('%s'), True, Parameter('%s'),
+                    Parameter('%s'), Parameter('%s'), Parameter('%s')
+                ).get_sql(),
+                (user_id, 'sha256', passwd_hsh, 'salt', 10)
+            )
+            self.conn.commit()
+            r = requests.post(
+                f'{HOST}/users/login',
+                json={
+                    'user_id': user_id,
+                    'username': 'testuser',
+                    'password': 'testpass2',
+                    'recaptcha_token': 'notoken'
+                }
+            )
+            self.assertNotEqual(r.status_code, 200)
+
 
 if __name__ == '__main__':
     unittest.main()
