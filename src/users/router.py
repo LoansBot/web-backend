@@ -76,9 +76,10 @@ def logout(auth: models.TokenAuthentication):
         429: {'description': 'You are doing that too much'}
     }
 )
-def request_claim_token(username: str):
+def request_claim_token(username: models.Username):
     """Sends a link to the reddit user with the given username which can be
     used to prove identity."""
+    username = username.username
     if len(username) > 32:
         return main_models.ErrorResponse(message='username invalid')
 
@@ -152,17 +153,29 @@ def request_claim_token(username: str):
     tags=['users', 'auth'],
     responses={
         200: {'description': 'Password set', 'model': models.TokenResponse},
-        400: {'description': 'Password invalid'},
-        403: {'description': 'Invalid or expired claim token'},
+        400: {'description': 'Password or recatpcha invalid', 'model': main_models.ErrorResponse},
+        403: {'description': 'Invalid or expired claim token', 'model': main_models.ErrorResponse},
         429: {'description': 'You are doing that too much'}
     }
 )
-def set_human_passauth_with_claim_token(user_id: int, claim_token: str, password: str):
+def set_human_passauth_with_claim_token(args: models.ClaimArgs):
     """Sets the human password for the given user to the given password using
     the given claim token as proof of account ownership.
     """
-    if not (5 < len(password) < 256):
-        return Response(status_code=400)
+    if not (5 < len(args.password) < 256):
+        return JSONResponse(
+            status_code=400,
+            content=main_models.ErrorResponse(
+                message='Password must be more than 5 and less than 256 characters'
+            )
+        )
+    if not security.verify_recaptcha(args.recaptcha_token):
+        return JSONResponse(
+            status_code=400,
+            content=main_models.ErrorResponse(
+                message='Invalid recaptcha token'
+            )
+        )
 
     with itgs.memcached() as cache:
         if not security.ratelimit(
@@ -172,7 +185,7 @@ def set_human_passauth_with_claim_token(user_id: int, claim_token: str, password
 
         if not security.ratelimit(
                 cache, 'MAX_USE_CLAIM_TOKEN_INDIV',
-                f'use_claim_token_{user_id}',
+                f'use_claim_token_{args.user_id}',
                 defaults={
                     int(timedelta(minutes=2).total_seconds()): 1,
                     int(timedelta(minutes=10).total_seconds()): 2,
@@ -182,9 +195,9 @@ def set_human_passauth_with_claim_token(user_id: int, claim_token: str, password
             return Response(status_code=429)
 
     with itgs.database() as conn:
-        if not helper.attempt_consume_claim_token(conn, user_id, claim_token):
+        if not helper.attempt_consume_claim_token(conn, args.user_id, args.claim_token):
             return Response(status_code=403)
         helper.create_or_update_human_password_auth(
-            conn, user_id, password
+            conn, args.user_id, args.password
         )
     return Response(status_code=200)
