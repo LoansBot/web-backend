@@ -3,9 +3,14 @@ from lblogging import Level
 import integrations as itgs
 import json
 import secrets
+import users.router
 
 
-app = FastAPI()  # noqa
+app = FastAPI(
+    title='RedditLoans',
+    description='See https://github.com/LoansBot'
+)
+app.include_router(users.router, prefix='/users')
 
 
 @app.get('/')
