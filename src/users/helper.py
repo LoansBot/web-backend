@@ -6,6 +6,7 @@ from pypika import PostgreSQLQuery as Query, Table, Parameter, functions as ppfn
 from hashlib import pbkdf2_hmac
 from datetime import datetime, timedelta
 import secrets
+from base64 import b64encode
 
 
 def get_valid_passwd_auth(
@@ -49,7 +50,14 @@ def get_valid_passwd_auth(
     if human and not security.verify_recaptcha(auth.recaptcha_token):
         return None
 
-    provided_hash = pbkdf2_hmac(hash_name, auth.password, salt, iters)
+    provided_hash = b64encode(
+        pbkdf2_hmac(
+            hash_name,
+            auth.password.encode('utf-8'),
+            salt.encode('utf-8'),
+            iters
+        )
+    ).decode('ascii')
     if hash_ != provided_hash:
         return None
     return id_
@@ -233,7 +241,14 @@ def create_or_update_human_password_auth(
     hash_name = 'sha512'
     salt = secrets.token_urlsafe(23)  # 31 chars
     iterations = 1000000
-    passwd_digest = pbkdf2_hmac(hash_name, passwd, salt, iterations)
+    passwd_digest = b64encode(
+        pbkdf2_hmac(
+            hash_name,
+            passwd.encode('utf-8'),
+            salt.encode('utf-8'),
+            iterations
+        )
+    ).decode('ascii')
     cursor.execute(
         '''
 INSERT INTO password_authentications(user_id, human, hash_name, hash, salt, iterations)
