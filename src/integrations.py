@@ -5,25 +5,56 @@ from pymemcache.client import base as membase
 import psycopg2
 import pika
 import os
+from contextlib import contextmanager
 
 
-def database():
-    return psycopg2.connect('')
+@contextmanager
+def database(val=None):
+    if val is not None:
+        yield val
+        return
+
+    conn = psycopg2.connect('')
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
-def logger():
-    logger = Logger(os.environ['APPNAME'], 'integrations.py', database())
-    logger.prepare()
-    return logger
+@contextmanager
+def logger(iden='integrations.py', val=None):
+    if val is not None:
+        yield val.with_iden(iden)
+        return
+
+    with database() as conn:
+        conn.autocommit = True
+        logger = Logger(os.environ['APPNAME'], iden, conn)
+        logger.prepare()
+        yield logger
 
 
-def memcached():
+@contextmanager
+def memcached(val=None):
+    if val is not None:
+        yield val
+        return
+
     memcache_host = os.environ['MEMCACHED_HOST']
     memcache_port = int(os.environ['MEMCACHED_PORT'])
-    return membase.Client((memcache_host, memcache_port))
+    client = membase.Client((memcache_host, memcache_port))
+    try:
+        yield client
+    finally:
+        client.close()
 
 
-def amqp():
+@contextmanager
+def amqp(val=None):
+    if val is not None:
+        yield val
+        return
+
     parameters = pika.ConnectionParameters(
         os.environ['AMQP_HOST'],
         int(os.environ['AMQP_PORT']),
@@ -35,4 +66,8 @@ def amqp():
     amqp = pika.BlockingConnection(parameters)
     channel = amqp.channel()
     channel.confirm_delivery()
-    return amqp, channel
+    try:
+        yield amqp, channel
+    finally:
+        channel.close()
+        amqp.close()
