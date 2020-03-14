@@ -100,11 +100,10 @@ def ratelimit(cache, environ_key, key_prefix, defaults=None, logger=None) -> boo
         cache_key = f'{key_prefix}_{interval}'
         cnt_now = cache.incr(cache_key, 1)
         if cnt_now is None:
-            succ = cache.add(cache_key, 1, expire=interval, noreply=False)
-            if not succ:
-                cnt_now = cache.incr(cache_key, 1)
-            else:
+            if cache.add(cache_key, 1, expire=interval, noreply=False):
                 cnt_now = 1
+            else:
+                cnt_now = cache.incr(cache_key, 1)
 
         if cnt_now > max_num:
             succ = False
