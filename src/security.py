@@ -98,7 +98,7 @@ def ratelimit(cache, environ_key, key_prefix, defaults=None, logger=None) -> boo
             continue
 
         cache_key = f'{key_prefix}_{interval}'
-        cnt_now = cache.incr(cache_key)
+        cnt_now = cache.incr(cache_key, 1)
         if cnt_now == 1:
             cache.touch(cache_key, expires=interval)
         elif cnt_now > max_num:
