@@ -117,7 +117,7 @@ def me(user_id: int, authtoken: str = Cookie(None)):
         (username,) = cursor.fetchone()
         return JSONResponse(
             status_code=200,
-            content=models.UserShowSelfResponse(username=username)
+            content=models.UserShowSelfResponse(username=username).dict()
         )
 
 
