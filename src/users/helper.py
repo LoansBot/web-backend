@@ -255,10 +255,12 @@ INSERT INTO password_authentications(user_id, human, hash_name, hash, salt, iter
     VALUES(%s, %s, %s, %s, %s, %s)
 ON CONFLICT
     DO UPDATE SET hash_name=%s, hash=%s, salt=%s, iterations=%s
+WHERE user_id=%s AND human=%s
 RETURNING id
         ''',
         (user_id, True, hash_name, passwd_digest, salt, iterations,
-         hash_name, passwd_digest, salt, iterations)
+         hash_name, passwd_digest, salt, iterations,
+         user_id, True)
     )
     (passauth_id,) = cursor.fetchone()
     if commit:
