@@ -113,6 +113,8 @@ jobs:
         WEBHOST: localhost
         WEBPORT: 8000
         UVICORN_PATH: uvicorn
+        APP_VERSION_NUMBER: 1
+        ROOT_DOMAIN: http://localhost:8000
     - name: Run integration tests
       working-directory: ./working/tests
       run: |
