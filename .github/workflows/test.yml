@@ -115,10 +115,17 @@ jobs:
         UVICORN_PATH: uvicorn
         APP_VERSION_NUMBER: 1
         ROOT_DOMAIN: http://localhost:8000
+        RATELIMIT_DISABLED: 1
+        HUMAN_PASSWORD_ITERS: 10
     - name: Run integration tests
       working-directory: ./working/tests
       run: |
         python -m unittest discover -s integration
+        PGHOST: localhost
+        PGPORT: ${{ job.services.postgres.ports['5432'] }}
+        PGDATABASE: postgres
+        PGUSER: postgres
+        PGPASSWORD: dev
       env:
         TEST_WEB_HOST: http://localhost:8000
     - name: Shutdown server

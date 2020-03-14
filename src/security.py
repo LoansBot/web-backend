@@ -26,6 +26,9 @@ def verify_recaptcha(token: typing.Optional[str]) -> bool:
     """Verifies that the given token is a valid recaptcha token str"""
     if token is None:
         return False
+    secret_key = os.environ.get('RECAPTCHA_SECRET_KEY')
+    if secret_key is None:
+        return True
     # TODO
     return True
 
@@ -68,6 +71,9 @@ def ratelimit(cache, environ_key, key_prefix, defaults=None, logger=None) -> boo
     limiting threshold, which won't happen on most requests so if a logger is
     not otherwise going to be used it should be initialized only if needed.
     """
+    if os.environ.get('RATELIMIT_DISABLED', '0') != '0':
+        return True
+
     settings = defaults
     env_limiting = os.environ.get(environ_key, '0')
     if env_limiting != '0':

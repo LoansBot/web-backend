@@ -7,6 +7,7 @@ from hashlib import pbkdf2_hmac
 from datetime import datetime, timedelta
 import secrets
 from base64 import b64encode
+import os
 
 
 def get_valid_passwd_auth(
@@ -240,7 +241,8 @@ def create_or_update_human_password_auth(
     user. They are assigned no additional permissions."""
     hash_name = 'sha512'
     salt = secrets.token_urlsafe(23)  # 31 chars
-    iterations = 1000000
+    iterations = int(os.environ.get('HUMAN_PASSWORD_ITERS', '1000000'))
+
     passwd_digest = b64encode(
         pbkdf2_hmac(
             hash_name,

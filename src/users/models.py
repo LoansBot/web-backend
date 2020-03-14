@@ -38,3 +38,9 @@ class ClaimArgs(BaseModel):
     claim_token: str
     password: str
     recaptcha_token: str
+
+
+class UserShowSelfResponse(BaseModel):
+    """The response that's provided if you GET yourself; where your identity
+    is proven using a token"""
+    username: str

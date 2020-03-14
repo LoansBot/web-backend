@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Cookie
 from fastapi.responses import Response, JSONResponse
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 from . import helper
@@ -11,6 +11,7 @@ import os
 import uuid
 import time
 import json
+from lblogging import Level
 
 
 router = APIRouter()
@@ -68,6 +69,54 @@ def logout(auth: models.TokenAuthentication):
         )
         conn.commit()
         return Response(status_code=200)
+
+
+@router.get(
+    '/{user_id}/me',
+    tags=['users'],
+    responses={
+        200: {'description': 'Authtoken accepted', 'model': models.UserShowSelfResponse},
+        403: {'description': 'Token authentication failed'}
+    }
+)
+def me(user_id: int, authtoken: str = Cookie()):
+    with itgs.database() as conn:
+        cursor = conn.cursor()
+        info = helper.get_auth_info_from_token_auth(
+            conn, cursor, models.TokenAuthentication(token=authtoken)
+        )
+        if info is None:
+            return Response(status_code=403)
+        auth_id, authed_user_id = info
+        if authed_user_id != user_id:
+            with itgs.logger('users/router.py') as lgr:
+                lgr.print(
+                    Level.DEBUG,
+                    'Someone proved their identity as {} with an authtoken, '
+                    'but they pretended they were {}. Their authtoken was '
+                    'revoked',
+                    authed_user_id, user_id
+                )
+            authtokens = Table('authtokens')
+            cursor.execute(
+                Query.from_(authtokens).delete()
+                .where(authtokens.id == Parameter('%s')).get_sql(),
+                (auth_id,)
+            )
+            conn.commit()
+            return Response(status_code=403)
+        users = Table('users')
+        cursor.execute(
+            Query.from_(users).select(users.username)
+            .where(users.id == Parameter('%s'))
+            .get_sql(),
+            (authed_user_id,)
+        )
+        (username,) = cursor.fetchone()
+        return JSONResponse(
+            status_code=200,
+            content=models.UserShowSelfResponse(username=username)
+        )
 
 
 @router.post(
