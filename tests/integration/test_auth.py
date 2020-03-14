@@ -63,7 +63,7 @@ class AuthTests(unittest.TestCase):
                 ).get_sql()
             )
             row = self.cursor.fetchone()
-            self.assertIsnotNone(row)
+            self.assertIsNotNone(row)
             self.assertIsNone(self.cursor.fetchone())
             self.assertEqual(row[0], user_id)
             self.assertTrue(row[1])
