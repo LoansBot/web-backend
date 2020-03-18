@@ -269,7 +269,7 @@ class AuthTests(unittest.TestCase):
                 json={
                     'user_id': 1,
                     'username': 'testuser',
-                    'password': 'test' * (256 / 4),
+                    'password': 'test' * (256 // 4),
                     'recaptcha_token': 'notoken'
                 }
             )
