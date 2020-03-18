@@ -207,7 +207,7 @@ def request_claim_token(username: models.Username):
     '/claim',
     tags=['users', 'auth'],
     responses={
-        200: {'description': 'Password set', 'model': models.TokenResponse},
+        200: {'description': 'Password set'},
         400: {'description': 'Password or recatpcha invalid', 'model': main_models.ErrorResponse},
         403: {'description': 'Invalid or expired claim token', 'model': main_models.ErrorResponse},
         429: {'description': 'You are doing that too much'}
