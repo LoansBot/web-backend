@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from lblogging import Level
 import integrations as itgs
 import json
@@ -9,6 +10,13 @@ import users.router
 app = FastAPI(
     title='RedditLoans',
     description='See https://github.com/LoansBot'
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=False,
+    allow_methods=['*'],
+    allow_headers=['*']
 )
 app.include_router(users.router.router, prefix='/users')
 
