@@ -191,7 +191,7 @@ def request_claim_token(username: models.Username):
                         'body': (
                             f'To claim your account on {url_root} '
                             ' by proving you own this reddit account, '
-                            f'[click here]({url_root}/claim?user_id={user_id}&token={token})'
+                            f'[click here]({url_root}/claim.html?user_id={user_id}&token={token})'
                             '\n\n'
                             'If you did not request this, ignore this message '
                             'and feel free to block future pms by clicking '
