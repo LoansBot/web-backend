@@ -22,6 +22,7 @@ class TokenResponse(SuccessResponse):
     """Describes a token response that the server can provide to the client
     when they prove their identity using a non-token authorization so they
     can use token authentication in the future"""
+    user_id: int
     token: str
     expires_at_utc: float
 

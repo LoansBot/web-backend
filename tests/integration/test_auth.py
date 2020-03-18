@@ -125,10 +125,12 @@ class AuthTests(unittest.TestCase):
 
             body = r.json()
             self.assertIsInstance(body, dict)
+            self.assertIsInstance(body.get('user_id'), int)
             self.assertIsInstance(body.get('token'), str)
             self.assertIsInstance(body.get('expires_at_utc'), float)
+            self.assertEqual(body['user_id'], user_id)
             self.assertGreaterEqual(body['expires_at_utc'], time.time())
-            self.assertEqual(2, len(body))
+            self.assertEqual(3, len(body))
 
             token = body['token']
             authtokens = Table('authtokens')

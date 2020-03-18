@@ -130,11 +130,11 @@ def create_token_from_passauth(conn, cursor, passauth_id: int) -> models.TokenRe
         .from_(pauths)
         .select(pauths.user_id, Parameter('%s'), Parameter('%s'))
         .where(pauths.id == Parameter('%s'))
-        .returning(authtokens.id)
+        .returning(authtokens.id, authtokens.user_id)
         .get_sql(),
         (token, expires_at, passauth_id)
     )
-    (authtoken_id,) = cursor.fetchone()
+    (authtoken_id, user_id) = cursor.fetchone()
     cursor.execute(
         Query
         .update(pauths)
@@ -154,7 +154,11 @@ def create_token_from_passauth(conn, cursor, passauth_id: int) -> models.TokenRe
         (authtoken_id,)
     )
     conn.commit()
-    return models.TokenResponse(token=token, expires_at_utc=expires_at.timestamp())
+    return models.TokenResponse(
+        user_id=user_id,
+        token=token,
+        expires_at_utc=expires_at.timestamp()
+    )
 
 
 def create_new_user(conn, cursor, username: str, commit=True) -> int:
