@@ -1,17 +1,23 @@
 from fastapi import FastAPI, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from lblogging import Level
 import integrations as itgs
 import json
 import secrets
 import users.router
-from flask_cors import CORS
 
 
 app = FastAPI(
     title='RedditLoans',
     description='See https://github.com/LoansBot'
 )
-CORS(app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_orgins=['*'],
+    allow_credentials=False,
+    allow_methods=['*'],
+    allow_headers=['*']
+)
 app.include_router(users.router.router, prefix='/users')
 
 
