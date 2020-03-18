@@ -4,12 +4,14 @@ import integrations as itgs
 import json
 import secrets
 import users.router
+from flask_cors import CORS
 
 
 app = FastAPI(
     title='RedditLoans',
     description='See https://github.com/LoansBot'
 )
+CORS(app)
 app.include_router(users.router.router, prefix='/users')
 
 
