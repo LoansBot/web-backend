@@ -22,6 +22,7 @@ router = APIRouter()
     tags=['users', 'auth'],
     responses={
         200: {'model': models.TokenResponse},
+        400: {'description': 'Username or password too long'},
         403: {
             'description': (
                 'The provided authentication could not be identified'
@@ -30,6 +31,9 @@ router = APIRouter()
     }
 )
 def login(auth: models.PasswordAuthentication):
+    if len(auth.username) > 32 or len(auth.password) > 255:
+        return Response(status_code=400)
+
     with itgs.database() as conn:
         cursor = conn.cursor()
         auth_id = None
