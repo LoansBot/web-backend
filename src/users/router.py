@@ -31,7 +31,7 @@ router = APIRouter()
     }
 )
 def login(auth: models.PasswordAuthentication):
-    if auth.username.length > 32 or auth.password.length > 255:
+    if len(auth.username) > 32 or len(auth.password) > 255:
         return Response(status_code=400)
 
     with itgs.database() as conn:

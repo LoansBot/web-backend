@@ -259,6 +259,22 @@ class AuthTests(unittest.TestCase):
             self.assertNotEqual(r.status_code, 200)
             self.assertLess(r.status_code, 500)
 
+    def test_login_passwd_long(self):
+        # It should not attempt to service this request as it would be
+        # computationally very expensive to hash a password this long
+        # (256 chars)
+        with helper.clear_tables(self.conn, self.cursor, ['users']):
+            r = requests.post(
+                f'{HOST}/users/login',
+                json={
+                    'user_id': 1,
+                    'username': 'testuser',
+                    'password': 'test' * (256 / 4),
+                    'recaptcha_token': 'notoken'
+                }
+            )
+            self.assertEqual(r.status_code, 400)
+
 
 if __name__ == '__main__':
     unittest.main()
