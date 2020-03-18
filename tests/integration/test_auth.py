@@ -56,7 +56,7 @@ class AuthTests(unittest.TestCase):
                 }
             )
             r.raise_for_status()
-            self.assertEquals(r.status_code, 200)
+            self.assertEqual(r.status_code, 200)
 
             pauths = Table('password_authentications')
             self.cursor.execute(
@@ -121,7 +121,7 @@ class AuthTests(unittest.TestCase):
                 }
             )
             r.raise_for_status()
-            self.assertEquals(r.status_code, 200)
+            self.assertEqual(r.status_code, 200)
 
             body = r.json()
             self.assertIsInstance(body, dict)
