@@ -107,5 +107,5 @@ def root(
             ))
         return JSONResponse(
             status_code=200,
-            content=models.LogsResponse(logs=result)
+            content=models.LogsResponse(logs=result).dict()
         )
