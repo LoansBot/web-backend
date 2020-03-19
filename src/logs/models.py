@@ -1,7 +1,6 @@
 """Contains the models that are used for logging"""
 from models import SuccessResponse
 from pydantic import BaseModel
-import typing
 
 
 class LogApplicationResponse(BaseModel):
@@ -14,7 +13,7 @@ class LogApplicationsResponse(SuccessResponse):
     """A response that indicates all of the log applications that we support
     logs for. This currently doesn't paginate as it's not expected to go
     above 10-20 results for the forseeable future."""
-    applications = typing.List[LogApplicationResponse]
+    applications = list  # items are LogApplicationResponse
 
 
 class LogResponse(BaseModel):
@@ -37,4 +36,4 @@ class LogResponse(BaseModel):
 
 class LogsResponse(SuccessResponse):
     """The response that is sent when a list of logs are requested"""
-    logs: typing.List[LogResponse]
+    logs: list  # items are LogResponse
