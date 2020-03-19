@@ -143,7 +143,7 @@ def applications(authorization: str = Header(None)):
 
         return JSONResponse(
             status_code=200,
-            content=models.LogApplicationResponse(applications=result).dict(),
+            content=models.LogApplicationsResponse(applications=result).dict(),
             headers={
                 'Cache-Control': 'public, max-age=86400, stale-if-error=2419200'
             }
