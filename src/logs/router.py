@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.get(
-    '/',
+    '/?',
     tags=['logs'],
     responses={
         200: {'description': 'Success', 'model': models.LogsResponse},
@@ -34,8 +34,6 @@ def root(
     """
     authtoken = users.helper.get_authtoken_from_header(authorization)
     if authtoken is None:
-        with itgs.logger() as lgr:
-            lgr.print(Level.DEBUG, 'Someone tried to use /logs with no auth ({})', authorization)
         return Response(status_code=403)
     if application_ids is not None:
         app_ids = application_ids.split(',')
@@ -52,13 +50,9 @@ def root(
             conn, cursor, users.models.TokenAuthentication(token=authtoken)
         )
         if info is None:
-            with itgs.logger() as lgr:
-                lgr.print(Level.DEBUG, 'Someone tried to use /logs with invalid auth')
             return Response(status_code=403)
         authid = info[0]
         if not users.helper.check_permission_on_authtoken(conn, cursor, authid, 'logs'):
-            with itgs.logger() as lgr:
-                lgr.print(Level.DEBUG, 'User hit {} but did not have logs perms', info[1])
             return Response(status_code=403)
 
         log_events = Table('log_events')
