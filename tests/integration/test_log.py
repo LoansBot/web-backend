@@ -84,7 +84,11 @@ class BasicResponseTests(unittest.TestCase):
             self.assertGreaterEqual(len(body), 1)
 
             for k, v in body['applications'].items():
-                self.assertIsInstance(k, int)
+                self.assertIsInstance(k, str)
+                try:
+                    int(k)
+                except ValueError:
+                    self.assertFalse(True, f'key is not a str\'d int: {k} (body={body})')
                 self.assertIsInstance(v, dict)
                 self.assertIsInstance(v.get('name'), str)
 

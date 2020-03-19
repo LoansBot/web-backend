@@ -12,7 +12,10 @@ class LogApplicationResponse(BaseModel):
 class LogApplicationsResponse(SuccessResponse):
     """A response that indicates all of the log applications that we support
     logs for. This currently doesn't paginate as it's not expected to go
-    above 10-20 results for the forseeable future."""
+    above 10-20 results for the forseeable future.
+
+    Note that json has only string keys, so clients need to reparse as ints.
+    """
     applications: typing.Dict[int, LogApplicationResponse]
 
 
