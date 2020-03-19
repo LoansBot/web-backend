@@ -13,7 +13,7 @@ class LogApplicationsResponse(SuccessResponse):
     """A response that indicates all of the log applications that we support
     logs for. This currently doesn't paginate as it's not expected to go
     above 10-20 results for the forseeable future."""
-    applications = typing.Dict[int, LogApplicationResponse]
+    applications: typing.Dict[int, LogApplicationResponse]
 
 
 class LogResponse(BaseModel):
