@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Cookie
+from fastapi import APIRouter, Header
 from fastapi.responses import Response, JSONResponse
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 from . import helper
@@ -83,9 +83,11 @@ def logout(auth: models.TokenAuthentication):
         403: {'description': 'Token authentication failed'}
     }
 )
-def me(user_id: int, authtoken: str = Cookie(None)):
+def me(user_id: int, authorization: str = Header(None)):
+    authtoken = helper.get_authtoken_from_header(authorization)
     if authtoken is None:
         return Response(status_code=403)
+
     with itgs.database() as conn:
         cursor = conn.cursor()
         info = helper.get_auth_info_from_token_auth(

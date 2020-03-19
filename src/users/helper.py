@@ -64,6 +64,20 @@ def get_valid_passwd_auth(
     return id_
 
 
+def get_authtoken_from_header(authorization):
+    """Converts the string or None value that was passed in an authorization
+    header to the corresponding authtoken if possible, otherwise returns
+    None"""
+    if authorization is None:
+        return None
+    spl = authorization.split(' ', 2)
+    if len(spl) != 2:
+        return None
+    if spl[0] != 'bearer':
+        return None
+    return spl[1]
+
+
 def get_auth_info_from_token_auth(
         conn, cursor, auth: models.TokenAuthentication) -> typing.Optional[
             typing.Tuple[int, int]]:
