@@ -55,7 +55,6 @@ def root(
             return Response(status_code=403)
 
         log_events = Table('log_events')
-        log_applications = Table('log_applications')
         log_identifiers = Table('log_identifiers')
         query = (
             Query.from_(log_events).select(
