@@ -294,10 +294,11 @@ def check_permission_on_authtoken(conn, cursor, authid, perm_name) -> bool:
     cursor.execute(
         Query.from_(authtoken_perms).select(1)
         .join(perms).on(authtoken_perms.permission_id == perms.id)
-        .where(authtoken_perms.id == authid)
-        .where(perms.name == perm_name)
+        .where(authtoken_perms.authtoken_id == Parameter('%s'))
+        .where(perms.name == Parameter('%s'))
         .limit(1)
-        .get_sql()
+        .get_sql(),
+        (authid, perm_name)
     )
     row = cursor.fetchone()
     return row is not None
