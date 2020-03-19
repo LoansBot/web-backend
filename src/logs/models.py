@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 class LogApplicationResponse(BaseModel):
     """Describes a single log application in a response"""
-    id: int
     name: str
 
 
@@ -13,7 +12,7 @@ class LogApplicationsResponse(SuccessResponse):
     """A response that indicates all of the log applications that we support
     logs for. This currently doesn't paginate as it's not expected to go
     above 10-20 results for the forseeable future."""
-    applications = list  # items are LogApplicationResponse
+    applications = dict  # keys are ids, items are LogApplicationResponse
 
 
 class LogResponse(BaseModel):

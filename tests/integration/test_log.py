@@ -65,6 +65,29 @@ class BasicResponseTests(unittest.TestCase):
             )
             self.assertEqual(r.status_code, 403)
 
+    def test_applications(self):
+        r = requests.get(HOST + '/test_log')
+        r.raise_for_status()
+        self.assertEqual(r.status_code, 200)
+
+        with helper.user_with_token(self.conn, self.cursor, ['logs']) as (user_id, token):
+            r = requests.get(
+                HOST + '/logs',
+                headers={'Authorization': f'bearer {token}'}
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            body = r.json()
+            self.assertIsInstance(body, dict)
+            self.assertIsInstance(body.get('applications'), dict)
+            self.assertGreaterEqual(len(body), 1)
+
+            for k, v in body['applications'].items():
+                self.assertIsInstance(k, int)
+                self.assertIsInstance(v, dict)
+                self.assertIsInstance(v.get('name'), str)
+
 
 if __name__ == '__main__':
     unittest.main()

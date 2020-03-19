@@ -102,3 +102,49 @@ def root(
             status_code=200,
             content=models.LogsResponse(logs=result).dict()
         )
+
+
+@router.get(
+    '/applications',
+    tags=['logs'],
+    response={
+        200: {'description': 'Success', 'model': models.LogApplicationsResponse},
+        403: {'description': 'Token authentication failed'}
+    }
+)
+def applications(authorization: str = Header(None)):
+    """Returns application ids mapped to the corresponding application
+    names."""
+    authtoken = users.helper.get_authtoken_from_header(authorization)
+    if authtoken is None:
+        return Response(status_code=403)
+    with itgs.database() as conn:
+        cursor = conn.cursor()
+        info = users.helper.get_auth_info_from_token_auth(
+            conn, cursor, users.models.TokenAuthentication(token=authtoken)
+        )
+        if info is None:
+            return Response(status_code=403)
+        authid = info[0]
+        if not users.helper.check_permission_on_authtoken(conn, cursor, authid, 'logs'):
+            return Response(status_code=403)
+
+        apps = Table('log_applications')
+        cursor.execute(
+            Query.from_(apps).select(apps.id, apps.name).get_sql()
+        )
+        result = {}
+
+        while True:
+            row = cursor.fetchone()
+            if row is None:
+                break
+            result[row[0]] = models.LogApplicationResponse(name=row[1])
+
+        return JSONResponse(
+            status_code=200,
+            content=models.LogApplicationResponse(applications=result).dict(),
+            headers={
+                'Cache-Control': 'public, max-age=86400, stale-if-error=2419200'
+            }
+        )
