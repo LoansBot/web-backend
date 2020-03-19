@@ -87,7 +87,7 @@ def me(user_id: int, authorization: str = Header(None)):
     if authorization is None:
         return Response(status_code=403)
     spl = authorization.split(' ', 2)
-    if spl.length != 2:
+    if len(spl) != 2:
         return Response(status_code=403)
     if spl[0] != 'bearer':
         return Response(status_code=403)
