@@ -5,7 +5,6 @@ from . import models
 import users.helper
 import integrations as itgs
 from datetime import datetime
-from lblogging import Level
 
 
 router = APIRouter()
