@@ -46,7 +46,7 @@ def root(
     with itgs.database() as conn:
         cursor = conn.cursor()
         info = users.helper.get_auth_info_from_token_auth(
-            conn, cursor, models.TokenAuthentication(token=authtoken)
+            conn, cursor, users.models.TokenAuthentication(token=authtoken)
         )
         if info is None:
             return Response(status_code=403)
