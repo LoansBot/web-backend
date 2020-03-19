@@ -284,3 +284,20 @@ RETURNING id
     if commit:
         conn.commit()
     return passauth_id
+
+
+def check_permission_on_authtoken(conn, cursor, authid, perm_name) -> bool:
+    """Checks that the given authorization token has the given permission. If
+    the authorization token does not exist this returns False"""
+    perms = Table('permissions')
+    authtoken_perms = Table('authtoken_permissions')
+    cursor.execute(
+        Query.from_(authtoken_perms).select(1)
+        .join(perms).on(authtoken_perms.permission_id == perms.id)
+        .where(authtoken_perms.id == authid)
+        .where(perms.name == perm_name)
+        .limit(1)
+        .get_sql()
+    )
+    row = cursor.fetchone()
+    return row is not None

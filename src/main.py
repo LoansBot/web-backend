@@ -5,6 +5,7 @@ import integrations as itgs
 import json
 import secrets
 import users.router
+import logs.router
 
 
 app = FastAPI(
@@ -19,6 +20,7 @@ app.add_middleware(
     allow_headers=['*']
 )
 app.include_router(users.router.router, prefix='/users')
+app.include_router(logs.router.router, prefix='/logs')
 
 
 @app.get('/')
