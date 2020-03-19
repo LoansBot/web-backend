@@ -78,7 +78,8 @@ def user_with_token(conn, cursor, add_perms=None, username='user_with_token', to
     finally:
         conn.rollback()
         cursor.execute(
-            Query.from_(users).delete().where(users.id == Parameter('%s')),
+            Query.from_(users).delete().where(users.id == Parameter('%s'))
+            .get_sql(),
             (user_id,)
         )
         for perm in perm_ids_to_delete:
