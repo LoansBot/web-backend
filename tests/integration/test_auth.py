@@ -165,7 +165,7 @@ class AuthTests(unittest.TestCase):
 
             r = requests.get(
                 f'{HOST}/users/{user_id}/me',
-                cookies={'authtoken': 'testtoken'}
+                headers={'Authorization': 'bearer testtoken'}
             )
             r.raise_for_status()
             self.assertEqual(r.status_code, 200)
@@ -274,6 +274,31 @@ class AuthTests(unittest.TestCase):
                 }
             )
             self.assertEqual(r.status_code, 400)
+
+    def test_me_no_token(self):
+        r = requests.get(f'{HOST}/users/1/me')
+        self.assertEqual(r.status_code, 403)
+
+    def test_me_single_string_token(self):
+        r = requests.get(
+            f'{HOST}/users/1/me',
+            headers={'Authorization': 'token'}
+        )
+        self.assertEqual(r.status_code, 403)
+
+    def test_me_bad_token(self):
+        r = requests.get(
+            f'{HOST}/users/1/me',
+            headers={'Authorization': 'bearer token'}
+        )
+        self.assertEqual(r.status_code, 403)
+
+    def test_me_token_spaces(self):
+        r = requests.get(
+            f'{HOST}/users/1/me',
+            headers={'Authorization': 'bearer token token'}
+        )
+        self.assertEqual(r.status_code, 403)
 
 
 if __name__ == '__main__':
