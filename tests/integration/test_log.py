@@ -80,7 +80,7 @@ class BasicResponseTests(unittest.TestCase):
 
             body = r.json()
             self.assertIsInstance(body, dict)
-            self.assertIsInstance(body.get('applications'), dict)
+            self.assertIsInstance(body.get('applications'), dict, f'body={body}')
             self.assertGreaterEqual(len(body), 1)
 
             for k, v in body['applications'].items():
