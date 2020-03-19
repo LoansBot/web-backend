@@ -84,14 +84,10 @@ def logout(auth: models.TokenAuthentication):
     }
 )
 def me(user_id: int, authorization: str = Header(None)):
-    if authorization is None:
+    authtoken = helper.get_authtoken_from_header(authorization)
+    if authtoken is None:
         return Response(status_code=403)
-    spl = authorization.split(' ', 2)
-    if len(spl) != 2:
-        return Response(status_code=403)
-    if spl[0] != 'bearer':
-        return Response(status_code=403)
-    authtoken = spl[1]
+
     with itgs.database() as conn:
         cursor = conn.cursor()
         info = helper.get_auth_info_from_token_auth(
