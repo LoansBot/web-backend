@@ -107,7 +107,7 @@ def root(
 @router.get(
     '/applications',
     tags=['logs'],
-    response={
+    responses={
         200: {'description': 'Success', 'model': models.LogApplicationsResponse},
         403: {'description': 'Token authentication failed'}
     }

@@ -72,7 +72,7 @@ class BasicResponseTests(unittest.TestCase):
 
         with helper.user_with_token(self.conn, self.cursor, ['logs']) as (user_id, token):
             r = requests.get(
-                HOST + '/logs',
+                HOST + '/logs/applications',
                 headers={'Authorization': f'bearer {token}'}
             )
             r.raise_for_status()
