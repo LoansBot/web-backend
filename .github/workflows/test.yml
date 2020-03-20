@@ -73,7 +73,6 @@ jobs:
         path: ./database
     - name: Setup database dependencies
       run: |
-        sudo apt update
         sudo apt install -yqq build-essential libcurl4-gnutls-dev libxml2-dev libssl-dev postgresql-common libpq-dev postgresql-client
         python -m pip install -r ./database/requirements.txt
     - name: Initialize database
