@@ -310,7 +310,7 @@ def check_permission_on_authtoken(
 def cache_control_for_expires_at(expires_at, try_refresh_every=None, private=True) -> str:
     """Returns the suggested cache control headers for the given expire-at
     time."""
-    time_to_expire = datetime.utcnow() - expires_at
+    time_to_expire = expires_at - datetime.utcnow()
     time_to_expire_secs = int(time_to_expire.total_seconds())
     if try_refresh_every is not None:
         max_age = min(time_to_expire_secs, try_refresh_every)
