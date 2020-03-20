@@ -187,7 +187,7 @@ class AuthTests(unittest.TestCase):
             split_cache_control = cc.split(', ')
             split_cache_control.remove('private')
             cc_args = dict([itm.split('=') for itm in split_cache_control])
-            for key in list(cc_args.keys):
+            for key in list(cc_args.keys()):
                 cc_args[key] = int(cc_args[key])
             self.assertGreater(cc_args['max-age'], 0)
             self.assertGreater(cc_args['stale-while-revalidate'], 0)
