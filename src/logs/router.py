@@ -5,7 +5,6 @@ from . import models
 import users.helper
 from lazy_integrations import LazyIntegrations as LazyItgs
 from datetime import datetime
-from lblogging import Level
 
 
 router = APIRouter()
