@@ -6,7 +6,7 @@ from . import models
 import models as main_models
 import security
 import integrations as itgs
-from datetime import timedelta
+from datetime import datetime, timedelta
 import os
 import uuid
 import time
@@ -84,6 +84,9 @@ def logout(auth: models.TokenAuthentication):
     }
 )
 def me(user_id: int, authorization: str = Header(None)):
+    """Get an extremely small amount of information about the user specified
+    in the token. This endpoint is expected to be used for the client verifying
+    tokens and will indicate so in the cache-control."""
     authtoken = helper.get_authtoken_from_header(authorization)
     if authtoken is None:
         return Response(status_code=403)
@@ -91,28 +94,13 @@ def me(user_id: int, authorization: str = Header(None)):
     with itgs.database() as conn:
         cursor = conn.cursor()
         info = helper.get_auth_info_from_token_auth(
-            conn, cursor, models.TokenAuthentication(token=authtoken)
+            conn, cursor, models.TokenAuthentication(token=authtoken),
+            require_user_id=user_id
         )
         if info is None:
             return Response(status_code=403)
-        auth_id, authed_user_id = info
-        if authed_user_id != user_id:
-            with itgs.logger('users/router.py') as lgr:
-                lgr.print(
-                    Level.DEBUG,
-                    'Someone proved their identity as {} with an authtoken, '
-                    'but they pretended they were {}. Their authtoken was '
-                    'revoked',
-                    authed_user_id, user_id
-                )
-            authtokens = Table('authtokens')
-            cursor.execute(
-                Query.from_(authtokens).delete()
-                .where(authtokens.id == Parameter('%s')).get_sql(),
-                (auth_id,)
-            )
-            conn.commit()
-            return Response(status_code=403)
+        auth_id, authed_user_id, expires_at = info[:3]
+
         users = Table('users')
         cursor.execute(
             Query.from_(users).select(users.username)
@@ -121,9 +109,69 @@ def me(user_id: int, authorization: str = Header(None)):
             (authed_user_id,)
         )
         (username,) = cursor.fetchone()
+
         return JSONResponse(
             status_code=200,
-            content=models.UserShowSelfResponse(username=username).dict()
+            content=models.UserShowSelfResponse(username=username).dict(),
+            headers={
+                'Cache-Control': helper.cache_control_for_expires_at(
+                    expires_at, try_refresh_every=60)
+            }
+        )
+
+
+@router.get(
+    '/{user_id}/permissions',
+    tags=['users', 'auth'],
+    responses={
+        200: {'description': 'Success', 'model': models.UserPermissions},
+        403: {'description': 'Token authentication failed'}
+    }
+)
+def check_permissions(user_id: int, authorization: str = Header(None)):
+    """Checks the given authorization tokens permission level. This should NOT
+    be used to check if the user is logged in. This response has cache-control
+    headers set to roughly the length of a token, since it's assumed that for
+    a given client permissions change fairly rarely and clients being somewhat
+    out of date about their permissions isn't a security issue (as the server
+    will recheck).
+
+    In the event of logging out and logging in on a new account, the fact that
+    the user id is in the url will more than suffice
+    """
+    authtoken = helper.get_authtoken_from_header(authorization)
+    if authtoken is None:
+        return Response(status_code=403)
+
+    with itgs.database() as conn:
+        cursor = conn.cursor()
+        info = helper.get_auth_info_from_token_auth(
+            conn, cursor, models.TokenAuthentication(token=authtoken),
+            require_user_id=user_id
+        )
+        if info is None:
+            return Response(status_code=403)
+        authid = info[0]
+        expires_at = info[2]
+
+        perms = Table('permissions')
+        auth_perms = Table('authtoken_permissions')
+        cursor.execute(
+            Query.from_(auth_perms)
+            .select(perms.name)
+            .join(perms).on(perms.id == auth_perms.permission_id)
+            .where(auth_perms.authtoken_id == Parameter('%s'))
+            .get_sql(),
+            (authid,)
+        )
+        res = cursor.fetchall()
+        permissions = [row[0] for row in res]
+        return JSONResponse(
+            status_code=200,
+            content=models.UserPermissions(permissions=permissions).dict(),
+            headers={
+                'Cache-Control': helper.cache_control_for_expires_at(expires_at)
+            }
         )
 
 

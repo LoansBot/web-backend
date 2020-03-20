@@ -79,12 +79,13 @@ def get_authtoken_from_header(authorization):
 
 
 def get_auth_info_from_token_auth(
-        conn, cursor, auth: models.TokenAuthentication) -> typing.Optional[
+        conn, cursor, auth: models.TokenAuthentication,
+        require_user_id=None) -> typing.Optional[
             typing.Tuple[int, int]]:
     """Get the id of the user meeting the given criteria if there is one. This
     will rollback the connection prior to starting, since it will need to
     execute queries which should be immediately committed.
-    Returns None or authid, userid
+    Returns None or authid, userid, expires_at
     """
     conn.rollback()
 
@@ -104,27 +105,26 @@ def get_auth_info_from_token_auth(
     authid, user_id, expires_at = row
     now = datetime.utcnow()
     if expires_at < now:
+        return None
+
+    if require_user_id is not None and user_id != require_user_id:
+        # TODO: move this information into a cache which we check to see if
+        # authtokens have been revoked, and have a background job push
+        # deletes to the database. That way this function is strictly
+        # read-only. We don't want to use a queue as we will be reading
+        # from the cache
         cursor.execute(
-            Query
-            .from_(auths)
-            .delete()
-            .where(auths.id == Parameter('%s'))
-            .get_sql(),
+            Query.from_(auths).delete()
+            .where(auths.id == Parameter('%s')).get_sql(),
             (authid,)
         )
         conn.commit()
         return None
 
-    cursor.execute(
-        Query
-        .update(auths)
-        .set(auths.last_seen_at, ppfns.Now())
-        .where(auths.id == Parameter('%s'))
-        .get_sql(),
-        (authid,)
-    )
+    # TODO: flag a last-seen-at in the cache which can be moved to the
+    # database in a background job
     conn.commit()
-    return authid, user_id
+    return authid, user_id, expires_at
 
 
 def create_token_from_passauth(conn, cursor, passauth_id: int) -> models.TokenResponse:
@@ -302,3 +302,21 @@ def check_permission_on_authtoken(conn, cursor, authid, perm_name) -> bool:
     )
     row = cursor.fetchone()
     return row is not None
+
+
+def cache_control_for_expires_at(expires_at, try_refresh_every=None, private=True) -> str:
+    """Returns the suggested cache control headers for the given expire-at
+    time."""
+    time_to_expire = datetime.utcnow() - expires_at
+    time_to_expire_secs = int(time_to_expire.total_seconds())
+    if try_refresh_every is not None:
+        max_age = min(time_to_expire_secs, try_refresh_every)
+    else:
+        max_age = time_to_expire_secs
+    stale_while_revalidate = max(time_to_expire_secs, 3600)
+    private_s = 'private' if private else 'public'
+    return (
+        f'{private_s}, max-age={max_age}, '
+        f'stale-while-revalidate={stale_while_revalidate}, '
+        f'stale-if-error=86400'
+    )

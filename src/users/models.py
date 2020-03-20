@@ -1,6 +1,7 @@
 """Contains the models that are used for users"""
 from models import SuccessResponse
 from pydantic import BaseModel
+import typing
 
 
 class PasswordAuthentication(BaseModel):
@@ -45,3 +46,8 @@ class UserShowSelfResponse(BaseModel):
     """The response that's provided if you GET yourself; where your identity
     is proven using a token"""
     username: str
+
+
+class UserPermissions(BaseModel):
+    """The response that's provided for a users permissions."""
+    permissions: typing.List[str]
