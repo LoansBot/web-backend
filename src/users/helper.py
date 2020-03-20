@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import secrets
 from base64 import b64encode
 import os
+import math
 
 
 def get_valid_passwd_auth(
@@ -79,13 +80,17 @@ def get_authtoken_from_header(authorization):
 
 
 def get_auth_info_from_token_auth(
-        conn, cursor, auth: models.TokenAuthentication,
+        cache, conn, cursor, auth: models.TokenAuthentication,
         require_user_id=None) -> typing.Optional[
             typing.Tuple[int, int]]:
     """Get the id of the user meeting the given criteria if there is one. This
     will rollback the connection prior to starting, since it will need to
     execute queries which should be immediately committed.
     Returns None or authid, userid, expires_at
+
+    This strictly reads from the database by leveraging the memcached to
+    temporarily store deletes, since the authtokens expire (and are cleaned
+    up) eventually
     """
     conn.rollback()
 
@@ -107,23 +112,18 @@ def get_auth_info_from_token_auth(
     if expires_at < now:
         return None
 
+    revoke_key = f'auth_token_revoked-{authid}'
+    if cache.get(revoke_key) is not None:
+        return None
+
     if require_user_id is not None and user_id != require_user_id:
-        # TODO: move this information into a cache which we check to see if
-        # authtokens have been revoked, and have a background job push
-        # deletes to the database. That way this function is strictly
-        # read-only. We don't want to use a queue as we will be reading
-        # from the cache
-        cursor.execute(
-            Query.from_(auths).delete()
-            .where(auths.id == Parameter('%s')).get_sql(),
-            (authid,)
-        )
-        conn.commit()
+        expired_in_secs = int(math.ceil((expires_at - now).total_seconds()))
+        expired_in_secs = max(expired_in_secs, 1)
+        cache.set(revoke_key, b'1', expire=expired_in_secs)
         return None
 
     # TODO: flag a last-seen-at in the cache which can be moved to the
     # database in a background job
-    conn.commit()
     return authid, user_id, expires_at
 
 

@@ -44,10 +44,10 @@ def root(
         if len(app_ids) == 0:
             application_ids = None
             app_ids = None
-    with itgs.database() as conn:
+    with itgs.database() as conn, itgs.memcached() as cache:
         cursor = conn.cursor()
         info = users.helper.get_auth_info_from_token_auth(
-            conn, cursor, users.models.TokenAuthentication(token=authtoken)
+            cache, conn, cursor, users.models.TokenAuthentication(token=authtoken)
         )
         if info is None:
             return Response(status_code=403)
@@ -119,10 +119,10 @@ def applications(authorization: str = Header(None)):
     authtoken = users.helper.get_authtoken_from_header(authorization)
     if authtoken is None:
         return Response(status_code=403)
-    with itgs.database() as conn:
+    with itgs.database() as conn, itgs.memcached() as cache:
         cursor = conn.cursor()
         info = users.helper.get_auth_info_from_token_auth(
-            conn, cursor, users.models.TokenAuthentication(token=authtoken)
+            cache, conn, cursor, users.models.TokenAuthentication(token=authtoken)
         )
         if info is None:
             return Response(status_code=403)

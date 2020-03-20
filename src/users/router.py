@@ -55,9 +55,9 @@ def login(auth: models.PasswordAuthentication):
     }
 )
 def logout(auth: models.TokenAuthentication):
-    with itgs.database() as conn:
+    with itgs.database() as conn, itgs.memcached() as cache:
         cursor = conn.cursor()
-        info = helper.get_auth_info_from_token_auth(conn, cursor, auth)
+        info = helper.get_auth_info_from_token_auth(cache, conn, cursor, auth)
         if info is None:
             return Response(status_code=403)
         auth_id = info[0]
@@ -91,10 +91,10 @@ def me(user_id: int, authorization: str = Header(None)):
     if authtoken is None:
         return Response(status_code=403)
 
-    with itgs.database() as conn:
+    with itgs.database() as conn, itgs.memcached() as cache:
         cursor = conn.cursor()
         info = helper.get_auth_info_from_token_auth(
-            conn, cursor, models.TokenAuthentication(token=authtoken),
+            cache, conn, cursor, models.TokenAuthentication(token=authtoken),
             require_user_id=user_id
         )
         if info is None:
@@ -143,10 +143,10 @@ def check_permissions(user_id: int, authorization: str = Header(None)):
     if authtoken is None:
         return Response(status_code=403)
 
-    with itgs.database() as conn:
+    with itgs.database() as conn, itgs.memcached() as cache:
         cursor = conn.cursor()
         info = helper.get_auth_info_from_token_auth(
-            conn, cursor, models.TokenAuthentication(token=authtoken),
+            cache, conn, cursor, models.TokenAuthentication(token=authtoken),
             require_user_id=user_id
         )
         if info is None:
