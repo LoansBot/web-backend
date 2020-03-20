@@ -29,11 +29,11 @@ class LazyIntegrations:
     def __enter__(self):
         return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         errors = []
         for closure in self.closures:
             try:
-                closure()
+                closure(exc_type, exc_value, traceback)
             except Exception as e:  # noqa
                 # we need to delay these to give other closures
                 # an opportunity
