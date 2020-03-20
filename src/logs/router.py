@@ -3,7 +3,7 @@ from fastapi.responses import Response, JSONResponse
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 from . import models
 import users.helper
-import integrations as itgs
+from lazy_integrations import LazyIntegrations as LazyItgs
 from datetime import datetime
 from lblogging import Level
 
@@ -44,15 +44,14 @@ def root(
         if len(app_ids) == 0:
             application_ids = None
             app_ids = None
-    with itgs.database() as conn, itgs.memcached() as cache:
-        cursor = conn.cursor()
+    with LazyItgs() as itgs:
         info = users.helper.get_auth_info_from_token_auth(
-            cache, conn, cursor, users.models.TokenAuthentication(token=authtoken)
+            itgs, users.models.TokenAuthentication(token=authtoken)
         )
         if info is None:
             return Response(status_code=403)
         authid = info[0]
-        if not users.helper.check_permission_on_authtoken(conn, cursor, authid, 'logs'):
+        if not users.helper.check_permission_on_authtoken(itgs, authid, 'logs'):
             return Response(status_code=403)
 
         log_events = Table('log_events')
@@ -85,10 +84,10 @@ def root(
         else:
             params.append(limit)
 
-        cursor.execute(query.get_sql(), params)
+        itgs.read_cursor.execute(query.get_sql(), params)
         result = []
         while True:
-            row = cursor.fetchone()
+            row = itgs.read_cursor.fetchone()
             if row is None:
                 break
             row_cat: datetime = row[4]
@@ -119,27 +118,26 @@ def applications(authorization: str = Header(None)):
     authtoken = users.helper.get_authtoken_from_header(authorization)
     if authtoken is None:
         return Response(status_code=403)
-    with itgs.database() as conn, itgs.memcached() as cache:
-        cursor = conn.cursor()
+    with LazyItgs() as itgs:
         info = users.helper.get_auth_info_from_token_auth(
-            cache, conn, cursor, users.models.TokenAuthentication(token=authtoken)
+            itgs, users.models.TokenAuthentication(token=authtoken)
         )
         if info is None:
             return Response(status_code=403)
         authid = info[0]
-        if not users.helper.check_permission_on_authtoken(conn, cursor, authid, 'logs'):
+        if not users.helper.check_permission_on_authtoken(itgs, authid, 'logs'):
             return Response(status_code=403)
 
         apps = Table('log_applications')
-        cursor.execute(
+        itgs.read_cursor.execute(
             Query.from_(apps).select(apps.id, apps.name).get_sql()
         )
         with itgs.logger() as lgr:
-            lgr.print(Level.DEBUG, 'Executed query {}', cursor.query.decode('utf-8'))
+            lgr.print(Level.DEBUG, 'Executed query {}', itgs.read_cursor.query.decode('utf-8'))
         result = {}
 
         while True:
-            row = cursor.fetchone()
+            row = itgs.read_cursor.fetchone()
             if row is None:
                 break
             result[row[0]] = models.LogApplicationResponse(name=row[1])

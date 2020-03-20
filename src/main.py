@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from lblogging import Level
-import integrations as itgs
+from lazy_integrations import LazyIntegrations as LazyItgs
 import json
 import secrets
 import users.router
@@ -30,44 +30,44 @@ def root():
 
 @app.get('/test_log')
 def test_log():
-    with itgs.logger('main.py') as logger:
-        logger.print(Level.TRACE, 'test_log')
+    with LazyItgs() as itgs:
+        itgs.logger.print(Level.TRACE, 'test_log')
     return Response(status_code=status.HTTP_200_OK)
 
 
 @app.get('/test_cache')
 def test_cache():
-    with itgs.memcached() as cache:
+    with LazyItgs() as itgs:
         resp = json.dumps({'message': 'how you doing'})
-        cache.set('test', resp.encode('utf-8'))
-        return json.loads(cache.get('test').decode('utf-8'))
+        itgs.cache.set('test', resp.encode('utf-8'))
+        return json.loads(itgs.cache.get('test').decode('utf-8'))
 
 
 @app.get('/test_amqp')
 def test_amqp():
-    with itgs.amqp() as (amqp, channel), itgs.logger('main.py') as logger:
-        channel.queue_declare(queue='hello')
+    with LazyItgs() as itgs:
+        itgs.channel.queue_declare(queue='hello')
 
         pub_body = secrets.token_urlsafe(16)
-        channel.basic_publish(
+        itgs.channel.basic_publish(
             exchange='',
             routing_key='hello',
             body=pub_body.encode('utf-8'),
             mandatory=True
         )
-        for method_frame, properties, body_bytes in channel.consume('hello', inactivity_timeout=1):
-            if method_frame is None:
-                logger.print(Level.WARN, 'test_amqp reached inactivity timeout')
-                channel.cancel()
+        for mf, props, body_bytes in itgs.channel.consume('hello', inactivity_timeout=1):
+            if mf is None:
+                itgs.logger.print(Level.WARN, 'test_amqp reached inactivity timeout')
+                itgs.channel.cancel()
                 return Response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            channel.basic_ack(method_frame.delivery_tag)
+            itgs.channel.basic_ack(mf.delivery_tag)
             con_body = body_bytes.decode('utf-8')
             if con_body != pub_body:
-                logger.print(
+                itgs.logger.print(
                     Level.WARN,
                     'test_amqp expected response {} but got {}',
                     pub_body, con_body
                 )
                 continue
-            channel.cancel()
+            itgs.channel.cancel()
             return Response(status_code=status.HTTP_200_OK)
