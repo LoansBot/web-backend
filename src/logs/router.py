@@ -132,8 +132,6 @@ def applications(authorization: str = Header(None)):
         itgs.read_cursor.execute(
             Query.from_(apps).select(apps.id, apps.name).get_sql()
         )
-        with itgs.logger() as lgr:
-            lgr.print(Level.DEBUG, 'Executed query {}', itgs.read_cursor.query.decode('utf-8'))
         result = {}
 
         while True:
@@ -141,11 +139,7 @@ def applications(authorization: str = Header(None)):
             if row is None:
                 break
             result[row[0]] = models.LogApplicationResponse(name=row[1])
-            with itgs.logger() as lgr:
-                lgr.print(Level.DEBUG, 'Found row {}', row)
 
-        with itgs.logger() as lgr:
-            lgr.print(Level.DEBUG, 'Returning result={}', result)
         return JSONResponse(
             status_code=200,
             content=models.LogApplicationsResponse(applications=result).dict(),
