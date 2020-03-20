@@ -3,7 +3,6 @@ all of them, but they are lazily initialized. Acts as a context manager,
 and any connections which are actually used are cleaned up at the end
 of the context."""
 import integrations as itgs
-from lblogging import Level
 
 
 class LazyIntegrations:
