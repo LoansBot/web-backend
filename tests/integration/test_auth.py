@@ -176,6 +176,23 @@ class AuthTests(unittest.TestCase):
             self.assertEqual(len(body), 1)
             self.assertEqual(body['username'], 'testuser')
 
+            # headers
+            self.assertIsInstance(r.headers.get('cache-control'), str)
+            cc = r.headers.get('cache-control')
+            self.assertIn('private', cc)
+            self.assertIn('max-age', cc)
+            self.assertIn('stale-while-revalidate', cc)
+            self.assertIn('stale-if-error', cc)
+
+            split_cache_control = cc.split(', ')
+            split_cache_control.remove('private')
+            cc_args = dict([itm.split('=') for itm in split_cache_control])
+            for key in list(cc_args.keys()):
+                cc_args[key] = int(cc_args[key])
+            self.assertGreater(cc_args['max-age'], 0)
+            self.assertGreater(cc_args['stale-while-revalidate'], 0)
+            self.assertGreater(cc_args['stale-if-error'], 0)
+
     def test_failed_claim_token(self):
         with helper.clear_tables(self.conn, self.cursor, ['users']):
             users = Table('users')
