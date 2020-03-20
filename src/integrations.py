@@ -70,5 +70,6 @@ def amqp(val=None):
     try:
         yield amqp, channel
     finally:
+        print('AMQP closing from finally block')
         channel.close()
         amqp.close()

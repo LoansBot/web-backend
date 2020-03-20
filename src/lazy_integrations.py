@@ -3,6 +3,7 @@ all of them, but they are lazily initialized. Acts as a context manager,
 and any connections which are actually used are cleaned up at the end
 of the context."""
 import integrations as itgs
+from lblogging import Level
 
 
 class LazyIntegrations:
@@ -99,8 +100,10 @@ class LazyIntegrations:
     def amqp_and_channel(self):
         """Get both the AMQP pika instance and the channel we are using"""
         if self._amqp is not None:
+            self.logger.print(Level.DEBUG, 'LazyIntegratinos returning existing amqp')
             return (self._amqp, self._channel)
 
+        self.logger.print(Level.DEBUG, 'LazyIntegrations initing amqp')
         ctx = itgs.amqp()
         self._aqmp, self._channel = ctx.__enter__()
         self.closures.append(ctx.__exit__)
