@@ -6,6 +6,7 @@ import psycopg2
 import pika
 import os
 from contextlib import contextmanager
+import logging
 
 
 @contextmanager
@@ -54,7 +55,7 @@ def amqp(val=None):
     if val is not None:
         yield val
         return
-
+    logging.getLogger("pika").setLevel(logging.WARNING)
     parameters = pika.ConnectionParameters(
         os.environ['AMQP_HOST'],
         int(os.environ['AMQP_PORT']),

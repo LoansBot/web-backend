@@ -3,7 +3,6 @@ import time
 from contextlib import contextmanager
 import typing
 import os
-import integrations as itgs
 from lblogging import Level
 from datetime import timedelta
 
@@ -33,7 +32,7 @@ def verify_recaptcha(token: typing.Optional[str]) -> bool:
     return True
 
 
-def ratelimit(cache, environ_key, key_prefix, defaults=None, logger=None) -> bool:
+def ratelimit(itgs, environ_key, key_prefix, defaults=None) -> bool:
     """Ratelimits a resource by preventing more than a given number of requests
     from occurring in a given interval. The ratelimiting amounts may be
     specified in environment variables. We use an ephemeral cache to store how
@@ -85,41 +84,38 @@ def ratelimit(cache, environ_key, key_prefix, defaults=None, logger=None) -> boo
                     raise ValueError(f'Weird key-value pair {k}={v}')
             settings = kvps
         except ValueError:
-            with itgs.logger(iden='security.py', val=logger) as lgr:
-                lgr.exception(
-                    Level.WARN,
-                    'Environment variable {} is malformed, using defaults',
-                    environ_key
-                )
+            itgs.logger.exception(
+                Level.WARN,
+                'Environment variable {} is malformed, using defaults',
+                environ_key
+            )
 
     succ = True
     for interval, max_num in settings.items():
         if interval <= 0 or max_num <= 0:
-            with itgs.logger(iden='security.py', val=logger) as lgr:
-                lgr.print(
-                    Level.WARN,
-                    'Default settings for {} are malformed',
-                    environ_key
-                )
+            itgs.logger.print(
+                Level.WARN,
+                'Default settings for {} are malformed',
+                environ_key
+            )
             continue
 
         cache_key = f'{key_prefix}_{interval}'
-        cnt_now = cache.incr(cache_key, 1)
+        cnt_now = itgs.cache.incr(cache_key, 1)
         if cnt_now is None:
-            if cache.add(cache_key, 1, expire=interval, noreply=False):
+            if itgs.cache.add(cache_key, 1, expire=interval, noreply=False):
                 cnt_now = 1
             else:
-                cnt_now = cache.incr(cache_key, 1)
+                cnt_now = itgs.cache.incr(cache_key, 1)
 
         if cnt_now > max_num:
             succ = False
 
             if cnt_now == max_num + 1:
-                with itgs.logger(iden='security.py', val=logger) as lgr:
-                    lgr.print(
-                        Level.WARN,
-                        'Rate-limiting initiated: {} requests in {} exceeds {}',
-                        cnt_now, timedelta(seconds=interval), environ_key
-                    )
+                itgs.logger.print(
+                    Level.WARN,
+                    'Rate-limiting initiated: {} requests in {} exceeds {}',
+                    cnt_now, timedelta(seconds=interval), environ_key
+                )
 
     return succ
