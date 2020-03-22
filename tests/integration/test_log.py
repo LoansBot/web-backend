@@ -39,6 +39,7 @@ class BasicResponseTests(unittest.TestCase):
             self.assertIsInstance(body.get('logs'), list, f'body={body}')
             for event in body['logs']:
                 self.assertIsInstance(event, dict, f'event={event}')
+                self.assertIsInstance(event.get('id'), int, f'event={event}')
                 self.assertIsInstance(event.get('app_id'), int, f'event={event}')
                 self.assertIsInstance(event.get('identifier'), str, f'event={event}')
                 self.assertIsInstance(event.get('level'), int, f'event={event}')
