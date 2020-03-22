@@ -84,7 +84,8 @@ def root(
             for app_id in app_ids:
                 params.append(app_id)
         if search is not None:
-            query = query.where(log_events.message.like(search))
+            query = query.where(log_events.message.like(Parameter('%s')))
+            params.append(search)
 
         if min_created_at is None and min_id is None:
             query = query.orderby(log_events.id, order=Order.desc)
