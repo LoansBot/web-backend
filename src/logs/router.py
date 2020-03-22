@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Header
 from fastapi.responses import Response, JSONResponse
-from pypika import PostgreSQLQuery as Query, Table, Parameter
+from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
 from . import models
 import users.helper
 from lazy_integrations import LazyIntegrations as LazyItgs
@@ -67,7 +67,6 @@ def root(
             ).join(log_identifiers).on(
                 log_identifiers.id == log_events.identifier_id
             )
-            .orderby(log_events.id)
         )
         params = []
         if min_created_at is not None:
@@ -83,6 +82,12 @@ def root(
             query = query.where(log_events.application_id.isin([Parameter('%s') for _ in app_ids]))
             for app_id in app_ids:
                 params.append(app_id)
+
+        if min_created_at is None and min_id is None:
+            query = query.orderby(log_events.id, order=Order.desc)
+        else:
+            query = query.orderby(log_events.id, order=Order.asc)
+
         query = query.limit(Parameter('%s'))
         if limit is None or limit > 100 or limit <= 0:
             params.append(100)
