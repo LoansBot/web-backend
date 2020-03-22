@@ -6,6 +6,7 @@ import json
 import secrets
 import users.router
 import logs.router
+import traceback
 
 
 app = FastAPI(
@@ -21,6 +22,17 @@ app.add_middleware(
 )
 app.include_router(users.router.router, prefix='/users')
 app.include_router(logs.router.router, prefix='/logs')
+
+
+@app.exception_handler(Exception)
+def handle_exception(request, exc):
+    traceback.print_exception(None, exc)
+    try:
+        with LazyItgs() as itgs:
+            itgs.logger.print(Level.ERROR, traceback.format_exception(None, exc, exc.__traceback__))
+    except:  # noqa
+        traceback.print_exc()
+    return Response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @app.get('/')
