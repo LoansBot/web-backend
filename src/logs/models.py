@@ -22,6 +22,7 @@ class LogApplicationsResponse(SuccessResponse):
 class LogResponse(BaseModel):
     """Describes the response for a single log event
 
+    @param id The id of the log event, which is a useful way to paginate
     @param app_id The id of the application which made this response
     @param identifier Typically the name of the file which issued the
       event
@@ -30,6 +31,7 @@ class LogResponse(BaseModel):
     @param message The message associated with the event
     @param created_at When the message was issued in seconds since utc epoch
     """
+    id: int
     app_id: int
     identifier: str
     level: int

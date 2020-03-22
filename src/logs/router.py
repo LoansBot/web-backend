@@ -22,12 +22,13 @@ router = APIRouter()
 def root(
         min_created_at: int = None,
         min_level: int = None,
+        min_id: int = None,
         application_ids: str = None,
         limit: int = 25,
         authorization: str = Header(None)):
     """The main endpoint for querying logs. Typically the front-end will need
     to query /applications as well so they can prettily display the
-    applications.
+    applications. This supports either id or timestamp forward-pagination
 
     The endpoint requires the "logs" permission.
     """
@@ -57,6 +58,7 @@ def root(
         log_identifiers = Table('log_identifiers')
         query = (
             Query.from_(log_events).select(
+                log_events.id,
                 log_events.level,
                 log_events.application_id,
                 log_identifiers.identifier,
@@ -73,6 +75,9 @@ def root(
         if min_level is not None:
             query = query.where(log_events.level >= Parameter('%s'))
             params.append(min_level)
+        if min_id is not None:
+            query = query.where(log_events.id >= Parameter('%s'))
+            params.append(min_id)
         if application_ids is not None:
             query = query.where(log_events.application_id.isin([Parameter('%s') for _ in app_ids]))
             for app_id in app_ids:
@@ -89,13 +94,13 @@ def root(
             row = itgs.read_cursor.fetchone()
             if row is None:
                 break
-            row_cat: datetime = row[4]
             result.append(models.LogResponse(
-                level=row[0],
-                app_id=row[1],
-                identifier=row[2],
-                message=row[3],
-                created_at=int(row_cat.timestamp())
+                id=row[0],
+                level=row[1],
+                app_id=row[2],
+                identifier=row[3],
+                message=row[4],
+                created_at=int(row[5].timestamp())
             ))
         return JSONResponse(
             status_code=200,
