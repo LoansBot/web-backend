@@ -24,6 +24,7 @@ def root(
         min_level: int = None,
         min_id: int = None,
         application_ids: str = None,
+        search: str = None,
         limit: int = 25,
         authorization: str = Header(None)):
     """The main endpoint for querying logs. Typically the front-end will need
@@ -82,6 +83,8 @@ def root(
             query = query.where(log_events.application_id.isin([Parameter('%s') for _ in app_ids]))
             for app_id in app_ids:
                 params.append(app_id)
+        if search is not None:
+            query = query.where(log_events.message.like(search))
 
         if min_created_at is None and min_id is None:
             query = query.orderby(log_events.id, order=Order.desc)
