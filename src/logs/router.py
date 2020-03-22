@@ -67,6 +67,7 @@ def root(
             ).join(log_identifiers).on(
                 log_identifiers.id == log_events.identifier_id
             )
+            .orderby(log_events.id)
         )
         params = []
         if min_created_at is not None:
