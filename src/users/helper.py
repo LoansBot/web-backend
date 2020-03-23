@@ -51,21 +51,22 @@ def get_valid_passwd_auth(
         return None
 
     id_, user_id, human, hash_name, hash_, salt, iters = row
+    if not security.ratelimit(
+            itgs,
+            'LOGIN_ONE_AUTH',
+            f'login_auth_{id_}',
+            {
+                int(timedelta(minutes=5).total_seconds()): 5,
+                int(timedelta(minutes=10).total_seconds()): 8,
+                int(timedelta(hours=1).total_seconds()): 10
+            }):
+        return None
+
     if human:
         if auth.captcha_token is None:
             # It's helpful when testing locally to bypass the captcha, but you
             # must have permission to do so and the operation is ratelimited
             # to prevent brute-force attacks.
-            if not security.ratelimit(
-                    itgs,
-                    'LOGIN_HUMAN_NO_CAPTCHA',
-                    f'login_human_no_captcha_{user_id}',
-                    {
-                        int(timedelta(minutes=5).total_seconds()): 2,
-                        int(timedelta(minutes=10).total_seconds()): 3,
-                        int(timedelta(hours=1).total_seconds()): 3
-                    }):
-                return None
             if not check_permission_on_passwd_auth(itgs, id_, 'bypass_captcha'):
                 itgs.logger.print(
                     Level.DEBUG,
