@@ -31,7 +31,7 @@ class TokenResponse(SuccessResponse):
 class ClaimRequestArgs(BaseModel):
     """A username and captcha token"""
     username: str
-    captcha_token: str = None
+    captcha_token: str
 
 
 class ClaimArgs(BaseModel):
