@@ -29,6 +29,8 @@ def verify_captcha(token: typing.Optional[str]) -> bool:
     if os.environ.get('HCAPTCHA_DISABLED', '0') == '1':
         return True
     secret_key = os.environ.get('HCAPTCHA_SECRET_KEY')
+    if secret_key == '0':
+        secret_key = None
     response = requests.post(
         'https://hcaptcha.com/siteverify',
         data={

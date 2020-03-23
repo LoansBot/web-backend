@@ -118,6 +118,7 @@ jobs:
         RATELIMIT_DISABLED: 1
         HUMAN_PASSWORD_ITERS: 10
         HCAPTCHA_DISABLED: 1
+        HCAPTCHA_SECRET: 0
     - name: Run integration tests
       working-directory: ./working/tests
       run: |
