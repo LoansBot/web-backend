@@ -50,7 +50,7 @@ def get_valid_passwd_auth(
         return None
 
     id_, user_id, human, hash_name, hash_, salt, iters = row
-    if human and not security.verify_recaptcha(auth.recaptcha_token):
+    if human and not security.verify_captcha(auth.captcha_token):
         return None
 
     provided_hash = b64encode(

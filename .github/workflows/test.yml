@@ -117,6 +117,7 @@ jobs:
         ROOT_DOMAIN: http://localhost:8000
         RATELIMIT_DISABLED: 1
         HUMAN_PASSWORD_ITERS: 10
+        HCAPTCHA_DISABLED: 1
     - name: Run integration tests
       working-directory: ./working/tests
       run: |

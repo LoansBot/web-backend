@@ -5,6 +5,7 @@ import typing
 import os
 from lblogging import Level
 from datetime import timedelta
+import requests
 
 
 @contextmanager
@@ -21,15 +22,22 @@ def fixed_duration(duration: float):
             time.sleep(duration - elapsed)
 
 
-def verify_recaptcha(token: typing.Optional[str]) -> bool:
-    """Verifies that the given token is a valid recaptcha token str"""
+def verify_captcha(token: typing.Optional[str]) -> bool:
+    """Verifies that the given token is a valid captcha token str"""
     if token is None:
         return False
-    secret_key = os.environ.get('RECAPTCHA_SECRET_KEY')
-    if secret_key is None:
+    if os.environ.get('HCAPTCHA_DISABLED', '0') == '1':
         return True
-    # TODO
-    return True
+    secret_key = os.environ.get('HCAPTCHA_SECRET_KEY')
+    response = requests.post(
+        'https://hcaptcha.com/siteverify',
+        data={
+            'secret': secret_key,
+            'response': token
+        }
+    )
+    json = response.json()
+    return json['status']
 
 
 def ratelimit(itgs, environ_key, key_prefix, defaults=None) -> bool:

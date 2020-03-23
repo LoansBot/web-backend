@@ -10,7 +10,7 @@ class PasswordAuthentication(BaseModel):
     username: str
     password: str
     password_authentication_id: int = None
-    recaptcha_token: str = None
+    captcha_token: str = None
 
 
 class TokenAuthentication(BaseModel):
@@ -39,7 +39,7 @@ class ClaimArgs(BaseModel):
     user_id: int
     claim_token: str
     password: str
-    recaptcha_token: str
+    captcha_token: str
 
 
 class UserShowSelfResponse(BaseModel):
