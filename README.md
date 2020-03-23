@@ -27,5 +27,4 @@ json-based and REST-inspired.
 - WEBPORT: The port to bind on
 - UVICORN_PATH: The path to the uvicorn executable
 - HCAPTCHA_SECRET: The hcaptcha secret; not required. If specified, the
-  earnings from hCaptcha will be sent here. On the main site 100% of
-  earnings are donated to the wikimedia foundation.
+  earnings from hCaptcha will be sent here.
