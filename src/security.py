@@ -26,7 +26,7 @@ def verify_captcha(token: typing.Optional[str]) -> bool:
     """Verifies that the given token is a valid captcha token str"""
     if token is None:
         return False
-    if os.environ.get('HCAPTCHA_DISABLED', True):
+    if os.environ.get('HCAPTCHA_DISABLED', '0') == '1':
         return True
     secret_key = os.environ.get('HCAPTCHA_SECRET_KEY')
     response = requests.post(
