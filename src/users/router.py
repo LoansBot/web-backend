@@ -179,12 +179,16 @@ def check_permissions(user_id: int, authorization: str = Header(None)):
         429: {'description': 'You are doing that too much'}
     }
 )
-def request_claim_token(username: models.Username):
+def request_claim_token(args: models.ClaimRequestArgs):
     """Sends a link to the reddit user with the given username which can be
     used to prove identity."""
-    username = username.username
+    username = args.username
+    token = args.captcha_token
     if len(username) > 32:
-        return main_models.ErrorResponse(message='username invalid')
+        return JSONResponse(
+            status_code=400,
+            content=main_models.ErrorResponse(message='username invalid').dict()
+        )
 
     with LazyItgs(no_read_only=True) as itgs:
         if not security.ratelimit(
@@ -202,6 +206,12 @@ def request_claim_token(username: models.Username):
                     int(timedelta(weeks=1).total_seconds()): 5
                 }):
             return Response(status_code=429)
+
+        if not security.verify_captcha(token):
+            return JSONResponse(
+                status_code=400,
+                content=main_models.ErrorResponse(message='captcha invalid').dict()
+            )
 
         users = Table('users')
         itgs.read_cursor.execute(
@@ -267,13 +277,6 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
             status_code=400,
             content=main_models.ErrorResponse(
                 message='Password must be more than 5 and less than 256 characters'
-            )
-        )
-    if not security.verify_captcha(args.captcha_token):
-        return JSONResponse(
-            status_code=400,
-            content=main_models.ErrorResponse(
-                message='Invalid captcha token'
             )
         )
 

@@ -28,9 +28,10 @@ class TokenResponse(SuccessResponse):
     expires_at_utc: float
 
 
-class Username(BaseModel):
-    """A username"""
+class ClaimRequestArgs(BaseModel):
+    """A username and captcha token"""
     username: str
+    captcha_token: str
 
 
 class ClaimArgs(BaseModel):
@@ -39,7 +40,6 @@ class ClaimArgs(BaseModel):
     user_id: int
     claim_token: str
     password: str
-    captcha_token: str
 
 
 class UserShowSelfResponse(BaseModel):
