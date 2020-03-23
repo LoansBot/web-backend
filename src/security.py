@@ -60,9 +60,9 @@ def ratelimit(itgs, environ_key, key_prefix, defaults=None) -> bool:
     maximum number of requests.
 
     example::
-        with itgs.memcached() as cache:
+        with LazyItgrs() as itgs
             ratelimit(
-                cache,
+                itgs,
                 'MAX_HUMAN_LOGINS',
                 'human_logins',  # will use human_logins_30 for 30 second store
                 {30: 5} # No more than 5 logins in 30 seconds

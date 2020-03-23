@@ -10,6 +10,7 @@ from base64 import b64encode
 import os
 import math
 from lazy_integrations import LazyIntegrations
+from lblogging import Level
 
 
 def get_valid_passwd_auth(
@@ -50,8 +51,32 @@ def get_valid_passwd_auth(
         return None
 
     id_, user_id, human, hash_name, hash_, salt, iters = row
-    if human and not security.verify_captcha(auth.captcha_token):
-        return None
+    if human:
+        if auth.captcha_token is None:
+            # It's helpful when testing locally to bypass the captcha, but you
+            # must have permission to do so and the operation is ratelimited
+            # to prevent brute-force attacks.
+            if not security.ratelimit(
+                    itgs,
+                    'LOGIN_HUMAN_NO_CAPTCHA',
+                    f'login_human_no_captcha_{user_id}',
+                    {
+                        300: 2,
+                        600: 3,
+                        3600: 5
+                    }):
+                return None
+            if not check_permission_on_passwd_auth(itgs, id_, 'bypass_captcha'):
+                itgs.logger.print(
+                    Level.DEBUG,
+                    'There was an attempt to login as {} without a captcha but '
+                    'that account does not have permission to do that. The '
+                    'permission required is bypass_captcha',
+                    auth.username
+                )
+                return None
+        elif not security.verify_captcha(auth.captcha_token):
+            return None
 
     provided_hash = b64encode(
         pbkdf2_hmac(
@@ -302,6 +327,25 @@ def check_permission_on_authtoken(
         .limit(1)
         .get_sql(),
         (authid, perm_name)
+    )
+    row = itgs.read_cursor.fetchone()
+    return row is not None
+
+
+def check_permission_on_passwd_auth(
+        itgs: LazyIntegrations, passwd_auth_id, perm_name) -> bool:
+    """Checks if the given password authentication id has the given permission.
+    """
+    perms = Table('permissions')
+    passwd_perms = Table('password_auth_permissions')
+    itgs.read_cursor.execute(
+        Query.from_(passwd_perms).select(1)
+        .join(perms).on(passwd_perms.permission_id == perms.id)
+        .where(passwd_perms.password_authentication_id == Parameter('%s'))
+        .where(perms.name == Parameter('%s'))
+        .limit(1)
+        .get_sql(),
+        (passwd_auth_id, perm_name)
     )
     row = itgs.read_cursor.fetchone()
     return row is not None
