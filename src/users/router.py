@@ -269,11 +269,11 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
                 message='Password must be more than 5 and less than 256 characters'
             )
         )
-    if not security.verify_recaptcha(args.recaptcha_token):
+    if not security.verify_captcha(args.captcha_token):
         return JSONResponse(
             status_code=400,
             content=main_models.ErrorResponse(
-                message='Invalid recaptcha token'
+                message='Invalid captcha token'
             )
         )
 
