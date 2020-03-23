@@ -61,9 +61,9 @@ def get_valid_passwd_auth(
                     'LOGIN_HUMAN_NO_CAPTCHA',
                     f'login_human_no_captcha_{user_id}',
                     {
-                        300: 2,
-                        600: 3,
-                        3600: 5
+                        int(timedelta(minutes=5).total_seconds()): 2,
+                        int(timedelta(minutes=10).total_seconds()): 3,
+                        int(timedelta(hours=1).total_seconds()): 3
                     }):
                 return None
             if not check_permission_on_passwd_auth(itgs, id_, 'bypass_captcha'):
