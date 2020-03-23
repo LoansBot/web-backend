@@ -61,12 +61,12 @@ def ratelimit(itgs, environ_key, key_prefix, defaults=None) -> bool:
 
     example::
         with LazyItgrs() as itgs
-            ratelimit(
-                itgs,
-                'MAX_HUMAN_LOGINS',
-                'human_logins',  # will use human_logins_30 for 30 second store
-                {30: 5} # No more than 5 logins in 30 seconds
-            )
+            if not ratelimit(
+                    itgs,
+                    'MAX_HUMAN_LOGINS',
+                    'human_logins',  # will use human_logins_30 for 30 second store
+                    {30: 5}): # No more than 5 logins in 30 seconds
+                return Response(status_code=429)
 
         # example to change to 5 in 30 seconds or 20 in 30 minutes using an
         # environment variable:
