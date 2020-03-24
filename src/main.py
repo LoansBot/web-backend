@@ -83,3 +83,8 @@ def test_amqp():
                 continue
             itgs.channel.cancel()
             return Response(status_code=status.HTTP_200_OK)
+
+
+@app.get('/test_error')
+def test_error():
+    return Response(status_code=1 / 0)
