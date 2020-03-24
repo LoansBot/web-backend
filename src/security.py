@@ -47,15 +47,15 @@ def verify_captcha(itgs, token: typing.Optional[str]) -> bool:
             '{} (status code={})', response.content, response.status_code
         )
         return False
-    if json.get('status') is None:
+    if json.get('success') is None:
         itgs.logger.print(
             Level.WARN,
             'Unexpected response type from hcaptcha siteverify. Expected json '
-            'response with a \'status\' field but got {} (status_code={})',
+            'response with a \'success\' field but got {} (status_code={})',
             json, response.status_code
         )
         return False
-    return json['status']
+    return json['success']
 
 
 def ratelimit(itgs, environ_key, key_prefix, defaults=None) -> bool:
