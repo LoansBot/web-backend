@@ -26,7 +26,7 @@ app.include_router(logs.router.router, prefix='/logs')
 
 @app.exception_handler(Exception)
 def handle_exception(request, exc):
-    traceback.print_exception(None, exc)
+    traceback.print_exception(None, exc, exc.__traceback__)
     try:
         with LazyItgs() as itgs:
             itgs.logger.print(Level.ERROR, traceback.format_exception(None, exc, exc.__traceback__))
@@ -83,3 +83,8 @@ def test_amqp():
                 continue
             itgs.channel.cancel()
             return Response(status_code=status.HTTP_200_OK)
+
+
+@app.get('/test_error')
+def test_error():
+    return Response(status_code=1 / 0)
