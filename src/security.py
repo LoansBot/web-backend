@@ -22,7 +22,7 @@ def fixed_duration(duration: float):
             time.sleep(duration - elapsed)
 
 
-def verify_captcha(token: typing.Optional[str]) -> bool:
+def verify_captcha(itgs, token: typing.Optional[str]) -> bool:
     """Verifies that the given token is a valid captcha token str"""
     if token is None:
         return False
@@ -38,7 +38,23 @@ def verify_captcha(token: typing.Optional[str]) -> bool:
             'response': token
         }
     )
-    json = response.json()
+    try:
+        json = response.json()
+    except:  # noqa
+        itgs.logger.print(
+            Level.WARN,
+            'hCaptcha siteverify did not return json! Instead I got: '
+            '{} (status code={})', response.content, response.status_code
+        )
+        return False
+    if json.get('status') is None:
+        itgs.logger.print(
+            Level.WARN,
+            'Unexpected response type from hcaptcha siteverify. Expected json '
+            'response with a \'status\' field but got {} (status_code={})',
+            json, response.status_code
+        )
+        return False
     return json['status']
 
 

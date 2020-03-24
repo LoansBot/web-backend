@@ -76,7 +76,7 @@ def get_valid_passwd_auth(
                     auth.username
                 )
                 return None
-        elif not security.verify_captcha(auth.captcha_token):
+        elif not security.verify_captcha(itgs, auth.captcha_token):
             return None
 
     provided_hash = b64encode(

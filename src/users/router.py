@@ -207,7 +207,7 @@ def request_claim_token(args: models.ClaimRequestArgs):
                 }):
             return Response(status_code=429)
 
-        if not security.verify_captcha(token):
+        if not security.verify_captcha(itgs, token):
             return JSONResponse(
                 status_code=400,
                 content=main_models.ErrorResponse(message='captcha invalid').dict()
