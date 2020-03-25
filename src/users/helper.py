@@ -29,6 +29,11 @@ def get_valid_passwd_auth(
     )
     row = itgs.read_cursor.fetchone()
     if row is None:
+        itgs.logger.print(
+            Level.TRACE,
+            'User {} tried to login but they have no account',
+            users.username
+        )
         return None
     (user_id,) = row
 
@@ -60,6 +65,11 @@ def get_valid_passwd_auth(
                 int(timedelta(minutes=10).total_seconds()): 8,
                 int(timedelta(hours=1).total_seconds()): 10
             }):
+        itgs.logger.print(
+            Level.TRACE,
+            'User {} (id {}) tried to login but was ratelimited',
+            auth.username, id_
+        )
         return None
 
     if human:
@@ -77,6 +87,11 @@ def get_valid_passwd_auth(
                 )
                 return None
         elif not security.verify_captcha(itgs, auth.captcha_token):
+            itgs.logger.print(
+                Level.TRACE,
+                'User {} tried to login, provided a captcha, but it was invalid',
+                auth.username
+            )
             return None
 
     provided_hash = b64encode(
@@ -88,7 +103,17 @@ def get_valid_passwd_auth(
         )
     ).decode('ascii')
     if hash_ != provided_hash:
+        itgs.logger.print(
+            Level.TRACE,
+            'User {} tried to login but provided the wrong password',
+            auth.username
+        )
         return None
+    itgs.logger.print(
+        Level.TRACE,
+        'User {} successfully logged in',
+        auth.username
+    )
     return id_
 
 
