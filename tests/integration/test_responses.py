@@ -4,7 +4,7 @@ import requests
 import os
 import helper
 import psycopg2
-from pypika import PostgreSQLQuery as Query, Table
+from pypika import PostgreSQLQuery as Query, Table, Parameter
 
 
 HOST = os.environ['TEST_WEB_HOST']
@@ -29,6 +29,9 @@ class BasicResponseTests(unittest.TestCase):
                     responses.response_body,
                     responses.description
                 ).insert(
+                    *[Parameter('%s') for _ in range(3)]
+                ).get_sql(),
+                (
                     'foobar',
                     'body',
                     'desc'
@@ -62,6 +65,9 @@ class BasicResponseTests(unittest.TestCase):
                     responses.response_body,
                     responses.description
                 ).insert(
+                    *[Parameter('%s') for _ in range(3)]
+                ).get_sql(),
+                (
                     'foobar',
                     'body',
                     'desc'

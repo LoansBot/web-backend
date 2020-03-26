@@ -405,10 +405,14 @@ def check_permissions_from_header(itgs, authorization, permissions):
     @param itgs The lazy integrations to use
     @param authorization The authorization header provided
     @param permissions The list of permissions required, where each item is
-        the string name of the permission. May be an empty list
+        the string name of the permission. May be an empty list or a single
+        string
     @return (True, user_id) if the authorization is valid and has
         all of the required permissions, (False, None) otherwise.
     """
+    if isinstance(permissions, str):
+        permissions = [permissions]
+
     authtoken = get_authtoken_from_header(authorization)
     if authtoken is None:
         return (False, None)
