@@ -417,7 +417,7 @@ def check_permissions_from_header(itgs, authorization, permissions):
     )
     if info is None:
         return (False, None)
-    auth_id, user_id = info[0]
+    auth_id, user_id = info[:2]
     if not permissions:
         return (True, user_id)
 
