@@ -21,7 +21,7 @@ class BasicResponseTests(unittest.TestCase):
         cls.conn.close()
 
     def test_index(self):
-        with helper.clear_tables(self.conn, self.cursor, 'responses'):
+        with helper.clear_tables(self.conn, self.cursor, ['responses']):
             responses = Table('responses')
             self.cursor.execute(
                 Query.into(responses).columns(
@@ -57,7 +57,7 @@ class BasicResponseTests(unittest.TestCase):
                 self.assertEqual(res_arr[0], 'foobar')
 
     def test_index_no_perm(self):
-        with helper.clear_tables(self.conn, self.cursor, 'responses'):
+        with helper.clear_tables(self.conn, self.cursor, ['responses']):
             responses = Table('responses')
             self.cursor.execute(
                 Query.into(responses).columns(

@@ -30,5 +30,5 @@ def root(authorization: str = Header(None)):
         resps = itgs.read_cursor.fetchall()
         return JSONResponse(
             status_code=200,
-            content=models.ResponseIndex(responses=resps).dict()
+            content=models.ResponseIndex(responses=[r for (r,) in resps]).dict()
         )
