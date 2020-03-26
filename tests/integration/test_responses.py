@@ -74,7 +74,7 @@ class BasicResponseTests(unittest.TestCase):
                 )
             )
 
-            with helper.user_with_token(self.conn, self.cursor, ['responses']) as (user_id, token):
+            with helper.user_with_token(self.conn, self.cursor, []) as (user_id, token):
                 r = requests.get(
                     HOST + '/responses',
                     headers={'Authorization': f'bearer {token}'}
