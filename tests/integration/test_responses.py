@@ -4,7 +4,7 @@ import requests
 import os
 import helper
 import psycopg2
-from pypika import PostgreSQLQuery as Query, Table, Parameter, functions as ppfns
+from pypika import PostgreSQLQuery as Query, Table
 
 
 HOST = os.environ['TEST_WEB_HOST']
@@ -52,6 +52,28 @@ class BasicResponseTests(unittest.TestCase):
                 self.assertEqual(len(res_arr), 1)
                 self.assertIsInstance(res_arr[0], str)
                 self.assertEqual(res_arr[0], 'foobar')
+
+    def test_index_no_perm(self):
+        with helper.clear_tables(self.conn, self.cursor, 'responses'):
+            responses = Table('responses')
+            self.cursor.execute(
+                Query.into(responses).columns(
+                    responses.name,
+                    responses.response_body,
+                    responses.description
+                ).insert(
+                    'foobar',
+                    'body',
+                    'desc'
+                )
+            )
+
+            with helper.user_with_token(self.conn, self.cursor, ['responses']) as (user_id, token):
+                r = requests.get(
+                    HOST + '/responses',
+                    headers={'Authorization': f'bearer {token}'}
+                )
+                self.assertEqual(r.status_code, 403)
 
 
 if __name__ == '__main__':

@@ -17,7 +17,11 @@ def clear_tables(conn, cursor, tbls):
 
 
 @contextmanager
-def user_with_token(conn, cursor, add_perms=None, username='user_with_token', token='testtoken'):
+def user_with_token(
+        conn, cursor,
+        add_perms=None,
+        username='user_with_token',
+        token='testtoken'):
     """Creates a user with an authorization token, returning the id of the
     user and the token to pass. This will delete the generated rows when
     finished.
@@ -85,7 +89,11 @@ def user_with_token(conn, cursor, add_perms=None, username='user_with_token', to
         for perm in perm_ids_to_delete:
             cursor.execute(
                 Query.from_(perms).delete()
-                .where(perms.id.isin([Parameter('%s') for _ in perm_ids_to_delete]))
+                .where(
+                    perms.id.isin(
+                        [Parameter('%s') for _ in perm_ids_to_delete]
+                    )
+                )
                 .get_sql(),
                 perm_ids_to_delete
             )

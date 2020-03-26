@@ -1,7 +1,7 @@
 """Handles the requests to /api/responses/**/*"""
 from fastapi import APIRouter, Header
 from fastapi.responses import Response, JSONResponse
-from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
+from pypika import PostgreSQLQuery as Query, Table
 from . import models
 import users.helper
 from lazy_integrations import LazyIntegrations as LazyItgs

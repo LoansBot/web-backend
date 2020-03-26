@@ -39,7 +39,11 @@ class AuthTests(unittest.TestCase):
             claim_tokens = Table('claim_tokens')
             self.cursor.execute(
                 Query.into(claim_tokens)
-                .columns(claim_tokens.user_id, claim_tokens.token, claim_tokens.expires_at)
+                .columns(
+                    claim_tokens.user_id,
+                    claim_tokens.token,
+                    claim_tokens.expires_at
+                )
                 .insert(Parameter('%s'), Parameter('%s'), Now())
                 .get_sql(),
                 (user_id, 'testtoken')
