@@ -10,7 +10,7 @@ class ResponseIndex(SuccessResponse):
 
     @param responses An array of the names of responses in an arbitrary order
     """
-    responses: typing.Array[str]
+    responses: typing.List[str]
 
 
 class ResponseShow(SuccessResponse):
