@@ -12,3 +12,9 @@ class SuccessResponse(BaseModel):
     """Indicates the operation succeeded. Usually identified with the status
     code"""
     pass
+
+
+class UserRef(BaseModel):
+    """A reference to a particular user."""
+    id: int
+    username: str

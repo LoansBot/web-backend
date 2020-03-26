@@ -134,8 +134,7 @@ def get_authtoken_from_header(authorization):
 def get_auth_info_from_token_auth(
         itgs: LazyIntegrations,
         auth: models.TokenAuthentication,
-        require_user_id=None) -> typing.Optional[
-            typing.Tuple[int, int]]:
+        require_user_id=None):
     """Get the id of the user meeting the given criteria if there is one. This
     will rollback the connection prior to starting, since it will need to
     execute queries which should be immediately committed.
@@ -393,3 +392,46 @@ def cache_control_for_expires_at(expires_at, try_refresh_every=None, private=Tru
         f'stale-while-revalidate={stale_while_revalidate}, '
         f'stale-if-error=86400'
     )
+
+
+def check_permissions_from_header(itgs, authorization, permissions):
+    """A convenience method to check that the given authorization header is
+    formatted correctly, corresponds to a real unexpired token, and that
+    token has all of the given list of permissions.
+
+    For most endpoints, calling this immediately after initializing the lazy
+    integrations is the fastest and easiest way to check permissions.
+
+    @param itgs The lazy integrations to use
+    @param authorization The authorization header provided
+    @param permissions The list of permissions required, where each item is
+        the string name of the permission. May be an empty list
+    @return (True, user_id) if the authorization is valid and has
+        all of the required permissions, (False, None) otherwise.
+    """
+    authtoken = get_authtoken_from_header(authorization)
+    if authtoken is None:
+        return (False, None)
+    info = get_auth_info_from_token_auth(
+        itgs, models.TokenAuthentication(token=authtoken)
+    )
+    if info is None:
+        return (False, None)
+    auth_id, user_id = info[0]
+    if not permissions:
+        return (True, user_id)
+
+    perms = Table('permissions')
+    authtoken_perms = Table('authtoken_permissions')
+    itgs.read_cursor.execute(
+        Query.from_(authtoken_perms).select(ppfns.Count('*'))
+        .join(perms).on(perms.id == authtoken_perms.permission_id)
+        .where(perms.name.isin([Parameter('%s') for _ in permissions]))
+        .where(authtoken_perms.authtoken_id == Parameter('%s'))
+        .get_sql(),
+        (*permissions, auth_id)
+    )
+    (num_perms_found,) = itgs.read_cursor.fetchone()
+    if num_perms_found == len(permissions):
+        return (True, user_id)
+    return (False, None)

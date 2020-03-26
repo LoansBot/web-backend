@@ -6,6 +6,7 @@ import json
 import secrets
 import users.router
 import logs.router
+import responses.router
 import traceback
 
 
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 app.include_router(users.router.router, prefix='/users')
 app.include_router(logs.router.router, prefix='/logs')
+app.include_router(responses.router.router, prefix='/responses')
 
 
 @app.exception_handler(Exception)
