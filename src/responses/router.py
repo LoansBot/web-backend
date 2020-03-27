@@ -31,7 +31,10 @@ def root(authorization: str = Header(None)):
         resps = itgs.read_cursor.fetchall()
         return JSONResponse(
             status_code=200,
-            content=models.ResponseIndex(responses=[r for (r,) in resps]).dict()
+            content=models.ResponseIndex(responses=[r for (r,) in resps]).dict(),
+            headers={
+                'Cache-Control': 'public, max-age=86400, stale-if-error=2629746'
+            }
         )
 
 
@@ -73,7 +76,10 @@ def show(name: str, authorization: str = Header(None)):
                 desc=row[3],
                 created_at=int(row[4].timestamp()),
                 updated_at=int(row[5].timestamp())
-            ).dict()
+            ).dict(),
+            headers={
+                'Cache-Control': 'public, max-age=86400, stale-if-error=2629746'
+            }
         )
 
 
@@ -168,7 +174,10 @@ def histories(name: str, limit: int = 10, authorization: str = Header(None)):
                     items=result
                 ),
                 number_truncated=number_truncated
-            ).dict()
+            ).dict(),
+            headers={
+                'Cache-Control': 'public, max-age=86400, stale-if-error=2629746'
+            }
         )
 
 
