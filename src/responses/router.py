@@ -78,7 +78,7 @@ def show(name: str, authorization: str = Header(None)):
 
 
 @router.get(
-    '{name}/histories',
+    '/{name}/histories',
     tags=['responses'],
     responses={
         200: {'description': 'Success', 'model': models.ResponseHistoryList},
