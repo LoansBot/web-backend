@@ -259,7 +259,6 @@ def update_response(name: str, change: models.ResponseEditArgs, authorization: s
         )
         if not authed:
             return Response(status_code=403)
-        users = Table('users')
         itgs.write_cursor.execute(
             'SELECT FOR SHARE id FROM users WHERE id=%s',
             (user_id,)
