@@ -98,6 +98,7 @@ class BasicResponseTests(unittest.TestCase):
                     'desc'
                 )
             )
+            self.conn.commit()
 
             with helper.user_with_token(self.conn, self.cursor, ['responses']) as (user_id, token):
                 r = requests.get(
@@ -137,6 +138,7 @@ class BasicResponseTests(unittest.TestCase):
                 )
             )
             (respid,) = self.cursor.fetchone()
+            self.conn.commit()
 
             with helper.user_with_token(self.conn, self.cursor, ['responses']) as (user_id, token):
                 resp_hists = Table('response_histories')
@@ -163,6 +165,7 @@ class BasicResponseTests(unittest.TestCase):
                     )
                 )
                 (hist_id,) = self.cursor.fetchone()
+                self.conn.commit()
 
                 r = requests.get(
                     HOST + '/responses/foobar/histories',
