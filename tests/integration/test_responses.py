@@ -291,7 +291,7 @@ class BasicResponseTests(unittest.TestCase):
             r = requests.get(
                 f'{HOST}/responses/foobar',
                 headers={
-                    'authorization', f'bearer {token}'
+                    'authorization': f'bearer {token}'
                 }
             )
             r.raise_for_status()
