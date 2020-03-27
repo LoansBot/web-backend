@@ -259,8 +259,11 @@ def update_response(name: str, change: models.ResponseEditArgs, authorization: s
         )
         if not authed:
             return Response(status_code=403)
+        users = Table('users')
         itgs.write_cursor.execute(
-            'SELECT FOR SHARE id FROM users WHERE id=%s',
+            Query.from_(users).select(users.id)
+            .where(users.id == Parameter('%s'))
+            .get_sql() + ' FOR SHARE',
             (user_id,)
         )
         row = itgs.write_cursor.fetchone()
@@ -269,7 +272,12 @@ def update_response(name: str, change: models.ResponseEditArgs, authorization: s
             return Response(status_code=403)
         responses = Table('responses')
         itgs.write_cursor.execute(
-            'SELECT FOR UPDATE id, response_body, description FROM responses WHERE name=%s',
+            Query.from_(responses).select(
+                responses.id,
+                responses.response_body,
+                responses.description
+            ).where(responses.name == Parameter('%s'))
+            .get_sql() + ' FOR UPDATE',
             (name,)
         )
         row = itgs.write_cursor.fetchone()
