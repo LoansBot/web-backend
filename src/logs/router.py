@@ -33,9 +33,6 @@ def root(
 
     The endpoint requires the "logs" permission.
     """
-    authtoken = users.helper.get_authtoken_from_header(authorization)
-    if authtoken is None:
-        return Response(status_code=403)
     if application_ids is not None:
         app_ids = application_ids.split(',')
         try:
@@ -46,13 +43,7 @@ def root(
             application_ids = None
             app_ids = None
     with LazyItgs() as itgs:
-        info = users.helper.get_auth_info_from_token_auth(
-            itgs, users.models.TokenAuthentication(token=authtoken)
-        )
-        if info is None:
-            return Response(status_code=403)
-        authid = info[0]
-        if not users.helper.check_permission_on_authtoken(itgs, authid, 'logs'):
+        if not users.helper.check_permissions_from_header(itgs, authorization, 'logs')[0]:
             return Response(status_code=403)
 
         log_events = Table('log_events')
@@ -129,17 +120,8 @@ def root(
 def applications(authorization: str = Header(None)):
     """Returns application ids mapped to the corresponding application
     names."""
-    authtoken = users.helper.get_authtoken_from_header(authorization)
-    if authtoken is None:
-        return Response(status_code=403)
     with LazyItgs() as itgs:
-        info = users.helper.get_auth_info_from_token_auth(
-            itgs, users.models.TokenAuthentication(token=authtoken)
-        )
-        if info is None:
-            return Response(status_code=403)
-        authid = info[0]
-        if not users.helper.check_permission_on_authtoken(itgs, authid, 'logs'):
+        if not users.helper.check_permissions_from_header(itgs, authorization, 'logs')[0]:
             return Response(status_code=403)
 
         apps = Table('log_applications')
