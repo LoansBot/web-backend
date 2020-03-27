@@ -212,6 +212,95 @@ class BasicResponseTests(unittest.TestCase):
                 self.assertIsInstance(edited_by.get('username'), str)
                 self.assertEqual(edited_by['id'], user_id)
 
+    def test_create(self):
+        with helper.clear_tables(self.conn, self.cursor, ['responses', 'response_histories']),\
+                helper.user_with_token(self.conn, self.cursor, ['responses']) as (user_id, token):
+            r = requests.post(
+                f'{HOST}/responses',
+                headers={
+                    'authorization': f'bearer {token}'
+                },
+                json={
+                    'name': 'foobar',
+                    'body': 'my body',
+                    'desc': 'my desc'
+                }
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            responses = Table('responses')
+            self.cursor.execute(
+                Query.from_(responses).select(
+                    responses.id,
+                    responses.response_body,
+                    responses.description
+                )
+                .where(responses.name == Parameter('%s'))
+                .get_sql(),
+                ('foobar',)
+            )
+            row = self.cursor.fetchone()
+            self.assertIsNotNone(row)
+            (respid, body, desc) = row
+
+            self.assertEqual(body, 'my body')
+            self.assertEqual(desc, 'my desc')
+
+            resp_hists = Table('response_histories')
+            self.cursor.execute(
+                Query.from_(resp_hists).select(1)
+                .where(resp_hists.response_id == Parameter('%s'))
+                .limit(1).get_sql(),
+                (respid,)
+            )
+            row = self.cursor.fetchone()
+            self.assertIsNotNone(row)
+
+    def test_edit(self):
+        with helper.clear_tables(self.conn, self.cursor, ['responses', 'response_histories']),\
+                helper.user_with_token(self.conn, self.cursor, ['responses']) as (user_id, token):
+            r = requests.post(
+                f'{HOST}/responses',
+                headers={
+                    'authorization': f'bearer {token}'
+                },
+                json={
+                    'name': 'foobar',
+                    'body': 'my body',
+                    'desc': 'my desc'
+                }
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            r = requests.post(
+                f'{HOST}/responses/foobar',
+                headers={
+                    'authorization': f'bearer {token}'
+                },
+                json={
+                    'body': 'new body',
+                    'desc': 'new desc',
+                    'edit_reason': 'new edit reason'
+                }
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            r = requests.get(
+                f'{HOST}/responses/foobar',
+                headers={
+                    'authorization', f'bearer {token}'
+                }
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            body = r.json()
+            self.assertEqual(body['body'], 'new body')
+            self.assertEqual(body['desc'], 'new desc')
+
 
 if __name__ == '__main__':
     unittest.main()

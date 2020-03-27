@@ -170,3 +170,148 @@ def histories(name: str, limit: int = 10, authorization: str = Header(None)):
                 number_truncated=number_truncated
             ).dict()
         )
+
+
+@router.post(
+    '/?',
+    tags=['responses'],
+    responses={
+        200: {'description': 'Success'},
+        403: {'description': 'Token authentication failed'},
+        409: {'description': 'Response name already taken'}
+    }
+)
+def create_response(response: models.ResponseCreateArgs, authorization: str = Header(None)):
+    with LazyItgs(no_read_only=True) as itgs:
+        authed, user_id = users_helper.check_permissions_from_header(
+            itgs, authorization, 'responses'
+        )
+        if not authed:
+            return Response(status_code=403)
+        responses = Table('responses')
+
+        itgs.write_cursor.execute(
+            Query.into(responses).columns(
+                responses.name,
+                responses.response_body,
+                responses.description
+            ).insert(*[Parameter('%s') for _ in range(3)])
+            .returning(responses.id).get_sql(),
+            (response.name, response.body, response.desc)
+        )
+        row = itgs.write_cursor.fetchone()
+        if row is None:
+            itgs.write_conn.rollback()
+            return Response(status_code=409)
+        (resp_id,) = row
+
+        resp_hists = Table('response_histories')
+        itgs.write_cursor.execute(
+            Query.into(resp_hists).columns(
+                resp_hists.response_id,
+                resp_hists.user_id,
+                resp_hists.old_raw,
+                resp_hists.new_raw,
+                resp_hists.reason,
+                resp_hists.old_desc,
+                resp_hists.new_desc
+            ).insert(*[Parameter('%s') for _ in range(7)])
+            .get_sql(),
+            (
+                resp_id,
+                user_id,
+                '',
+                response.body,
+                'Created',
+                '',
+                response.desc
+            )
+        )
+        itgs.write_conn.commit()
+        return Response(status_code=200)
+
+
+@router.post(
+    '/{name}/?',
+    tags=['responses'],
+    responses={
+        200: {'description': 'Success'},
+        403: {'description': 'Token authentication failed'},
+        404: {'description': 'Response not found'}
+    }
+)
+def update_response(name: str, change: models.ResponseEditArgs, authorization: str = Header(None)):
+    if len(change.edit_reason) < 5:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['body', 'edit_reason']
+                },
+                'msg': 'minimum 5 characters',
+                'type': 'too_short'
+            }
+        )
+
+    with LazyItgs(no_read_only=True) as itgs:
+        authed, user_id = users_helper.check_permissions_from_header(
+            itgs, authorization, 'responses'
+        )
+        if not authed:
+            return Response(status_code=403)
+        users = Table('users')
+        itgs.write_cursor.execute(
+            'SELECT FOR SHARE id FROM users WHERE id=%s',
+            (user_id,)
+        )
+        row = itgs.write_cursor.fetchone()
+        if row is None:
+            itgs.write_conn.rollback()
+            return Response(status_code=403)
+        responses = Table('responses')
+        itgs.write_cursor.execute(
+            'SELECT FOR UPDATE id, response_body, description FROM responses WHERE name=%s',
+            (name,)
+        )
+        row = itgs.write_cursor.fetchone()
+        if row is None:
+            itgs.write_conn.rollback()
+            return Response(status_code=404)
+        (resp_id, old_body, old_desc) = row
+        resp_hists = Table('response_histories')
+        itgs.write_cursor.execute(
+            Query.into(resp_hists).columns(
+                resp_hists.response_id,
+                resp_hists.user_id,
+                resp_hists.old_raw,
+                resp_hists.new_raw,
+                resp_hists.reason,
+                resp_hists.old_desc,
+                resp_hists.new_desc
+            ).insert(*[Parameter('%s') for _ in range(7)])
+            .get_sql(),
+            (
+                resp_id,
+                user_id,
+                old_body,
+                change.body,
+                change.edit_reason,
+                old_desc,
+                change.desc
+            )
+        )
+        itgs.write_cursor.execute(
+            Query.update(responses)
+            .set(responses.response_body, Parameter('%s'))
+            .set(responses.description, Parameter('%s'))
+            .set(responses.updated_at, ppfns.Now())
+            .where(responses.id == Parameter('%s'))
+            .get_sql(),
+            (
+                change.body,
+                change.desc,
+                resp_id
+            )
+        )
+        itgs.write_conn.commit()
+        return Response(status_code=200)
