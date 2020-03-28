@@ -6,6 +6,7 @@ from models import UserRef
 from . import models
 import users.helper as users_helper
 from lazy_integrations import LazyIntegrations as LazyItgs
+from lblogging import Level
 
 
 router = APIRouter()
@@ -197,6 +198,39 @@ def create_response(response: models.ResponseCreateArgs, authorization: str = He
         )
         if not authed:
             return Response(status_code=403)
+        if len(response.name) < 3:
+            itgs.logger.print(
+                Level.DEBUG,
+                'Preventing user {} from making response \'{}\' (name too short)',
+                user_id, response.name
+            )
+            return JSONResponse(
+                status_code=422,
+                content={
+                    'detail': {
+                        'loc': ['body', 'name']
+                    },
+                    'msg': 'minimum 3 characters',
+                    'type': 'too_short'
+                }
+            )
+        if response != response.strip():
+            itgs.logger.print(
+                Level.DEBUG,
+                'Preventing user {} from making response \'{}\' (name not stripped)',
+                user_id, response.name
+            )
+            return JSONResponse(
+                status_code=422,
+                content={
+                    'detail': {
+                        'loc': ['body', 'name']
+                    },
+                    'msg': 'must be stripped of trailing and leading whitespace',
+                    'type': 'strip'
+                }
+            )
+
         responses = Table('responses')
 
         itgs.write_cursor.execute(
