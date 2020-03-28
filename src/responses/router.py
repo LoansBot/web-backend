@@ -214,7 +214,7 @@ def create_response(response: models.ResponseCreateArgs, authorization: str = He
                     'type': 'too_short'
                 }
             )
-        if response != response.strip():
+        if response.name != response.name.strip():
             itgs.logger.print(
                 Level.DEBUG,
                 'Preventing user {} from making response \'{}\' (name not stripped)',
