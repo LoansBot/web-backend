@@ -257,6 +257,38 @@ class BasicResponseTests(unittest.TestCase):
             row = self.cursor.fetchone()
             self.assertIsNotNone(row)
 
+    def test_create_too_short(self):
+        with helper.clear_tables(self.conn, self.cursor, ['responses', 'response_histories']),\
+                helper.user_with_token(self.conn, self.cursor, ['responses']) as (user_id, token):
+            r = requests.post(
+                f'{HOST}/responses',
+                headers={
+                    'authorization': f'bearer {token}'
+                },
+                json={
+                    'name': 'fo',
+                    'body': 'my body',
+                    'desc': 'my desc'
+                }
+            )
+            self.assertEqual(r.status_code, 422)
+
+    def test_create_unstripped(self):
+        with helper.clear_tables(self.conn, self.cursor, ['responses', 'response_histories']),\
+                helper.user_with_token(self.conn, self.cursor, ['responses']) as (user_id, token):
+            r = requests.post(
+                f'{HOST}/responses',
+                headers={
+                    'authorization': f'bearer {token}'
+                },
+                json={
+                    'name': ' foobar',
+                    'body': 'my body',
+                    'desc': 'my desc'
+                }
+            )
+            self.assertEqual(r.status_code, 422)
+
     def test_edit(self):
         with helper.clear_tables(self.conn, self.cursor, ['responses', 'response_histories']),\
                 helper.user_with_token(self.conn, self.cursor, ['responses']) as (user_id, token):
