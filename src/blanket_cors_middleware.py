@@ -31,17 +31,6 @@ class BlanketCORSMiddleware:
 
         await self.simple_response(scope, receive, send, request_headers=headers)
 
-    def is_allowed_origin(self, origin: str) -> bool:
-        if self.allow_all_origins:
-            return True
-
-        if self.allow_origin_regex is not None and self.allow_origin_regex.fullmatch(
-            origin
-        ):
-            return True
-
-        return origin in self.allow_origins
-
     def preflight_response(self, request_headers: Headers) -> Response:
         requested_origin = request_headers["origin"]
         requested_headers = request_headers.get("access-control-request-headers")
