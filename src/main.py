@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Response, status
-from fastapi.middleware.cors import CORSMiddleware
+from blanket_cors_middleware import BlanketCORSMiddleware
 from lblogging import Level
 from lazy_integrations import LazyIntegrations as LazyItgs
 import json
@@ -14,13 +14,7 @@ app = FastAPI(
     title='RedditLoans',
     description='See https://github.com/LoansBot'
 )
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=['*'],
-    allow_credentials=False,
-    allow_methods=['*'],
-    allow_headers=['*']
-)
+app.add_middleware(BlanketCORSMiddleware)
 app.include_router(users.router.router, prefix='/users')
 app.include_router(logs.router.router, prefix='/logs')
 app.include_router(responses.router.router, prefix='/responses')
