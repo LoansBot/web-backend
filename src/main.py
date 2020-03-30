@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response, status
 from blanket_cors_middleware import BlanketCORSMiddleware
 from lblogging import Level
-from lazy_integrations import LazyIntegrations as LazyItgs
+from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 import json
 import secrets
 import users.router

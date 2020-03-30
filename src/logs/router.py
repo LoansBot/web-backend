@@ -3,7 +3,7 @@ from fastapi.responses import Response, JSONResponse
 from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
 from . import models
 import users.helper
-from lazy_integrations import LazyIntegrations as LazyItgs
+from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from datetime import datetime
 
 

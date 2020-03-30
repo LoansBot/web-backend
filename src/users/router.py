@@ -5,7 +5,7 @@ from . import helper
 from . import models
 import models as main_models
 import security
-from lazy_integrations import LazyIntegrations as LazyItgs
+from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from datetime import timedelta
 import os
 import uuid
