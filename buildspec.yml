@@ -6,7 +6,9 @@ phases:
     commands:
       - yum -y install git
       - git clone --depth 1 https://github.com/LoansBot/logging.git
+      - git clone --depth 1 https://github.com/LoansBot/shared.git
       - mv logging/requirements.txt logging/logging-requirements.txt
+      - mv shared/requirements.txt shared/shared-requirements.txt
 artifacts:
   files:
      - src/**/*
@@ -16,3 +18,5 @@ artifacts:
      - requirements.txt
      - logging/src/**/*
      - logging/logging-requirements.txt
+     - shared/src/**/*
+     - shared/shared-requirements.txt

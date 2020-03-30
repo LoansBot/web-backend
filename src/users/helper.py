@@ -9,7 +9,7 @@ import secrets
 from base64 import b64encode
 import os
 import math
-from lazy_integrations import LazyIntegrations
+from lbshared.lazy_integrations import LazyIntegrations
 from lblogging import Level
 
 

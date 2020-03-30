@@ -5,9 +5,13 @@ files:
     destination: /webapps/lbapi/src
   - source: logging/src
     destination: /webapps/lbapi/src
+  - source: shared/src
+    destination: /webapps/lbapi/src
   - source: requirements.txt
     destination: /webapps/lbapi
   - source: logging/logging-requirements.txt
+    destination: /webapps/lbapi
+  - source: shared/shared-requirements.txt
     destination: /webapps/lbapi
   - source: scripts
     destination: /webapps/lbapi/scripts

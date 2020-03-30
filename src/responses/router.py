@@ -5,7 +5,7 @@ from pypika import PostgreSQLQuery as Query, Table, Parameter, Order, functions 
 from models import UserRef
 from . import models
 import users.helper as users_helper
-from lazy_integrations import LazyIntegrations as LazyItgs
+from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lblogging import Level
 
 
