@@ -84,3 +84,9 @@ def test_amqp():
 @app.get('/test_error')
 def test_error():
     return Response(status_code=1 / 0)
+
+@app.get('/test_arango')
+def test_arango():
+    with LazyItgs() as itgs:
+        itgs.kvs_db.check_if_exists()
+        return Response(status_code=status.HTTP_200_OK)

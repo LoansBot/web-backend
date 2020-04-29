@@ -28,3 +28,9 @@ json-based and REST-inspired.
 - UVICORN_PATH: The path to the uvicorn executable
 - HCAPTCHA_SECRET: The hcaptcha secret; not required. If specified, the
   earnings from hCaptcha will be sent here.
+- ARANGO_AUTH: See https://github.com/Tjstretchalot/arango_crud/blob/master/src/arango_crud/env_config.py#L87
+- ARANGO_AUTH_CACHE: See https://github.com/Tjstretchalot/arango_crud/blob/master/src/arango_crud/env_config.py#L109
+- ARANGO_AUTH_USERNAME: See https://github.com/Tjstretchalot/arango_crud/blob/master/src/arango_crud/env_config.py#L90
+- ARANGO_AUTH_PASSWORD: See https://github.com/Tjstretchalot/arango_crud/blob/master/src/arango_crud/env_config.py#L91
+- ARANGO_TTL_SECONDS: See https://github.com/Tjstretchalot/arango_crud/blob/master/src/arango_crud/env_config.py#L74
+- ARANGO_DB: The arango database to connect to

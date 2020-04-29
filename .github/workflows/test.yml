@@ -30,6 +30,12 @@ jobs:
         image: memcached
         ports:
           - 11211/tcp
+      arangodb:
+        image: arangodb/arangodb
+        ports:
+          - 8529/tcp
+        env:
+          ARANGO_ROOT_PASSWORD: mango
     steps:
     - name: Setup Python ${{ matrix.python_version }}
       uses: actions/setup-python@v1
@@ -128,6 +134,12 @@ jobs:
         HUMAN_PASSWORD_ITERS: 10
         HCAPTCHA_DISABLED: 1
         HCAPTCHA_SECRET_KEY: 0
+        ARANGO_AUTH: jwt
+        ARANGO_AUTH_CACHE: disk
+        ARANGO_AUTH_USERNAME: root
+        ARANGO_AUTH_PASSWORD: mango
+        ARANGO_TTL_SECONDS: 3600
+        ARANGO_DB: test
     - name: Run integration tests
       working-directory: ./working/tests
       run: |

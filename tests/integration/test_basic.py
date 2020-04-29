@@ -28,6 +28,11 @@ class BasicResponseTests(unittest.TestCase):
         r.raise_for_status()
         self.assertEqual(r.status_code, 200)
 
+    def test_arango_gives_200(self):
+        r = requests.get(HOST + '/test_arango')
+        r.raise_for_status()
+        self.assertEqual(r.status_code, 200)
+
 
 if __name__ == '__main__':
     unittest.main()
