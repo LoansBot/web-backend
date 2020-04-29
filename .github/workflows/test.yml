@@ -134,6 +134,7 @@ jobs:
         HUMAN_PASSWORD_ITERS: 10
         HCAPTCHA_DISABLED: 1
         HCAPTCHA_SECRET_KEY: 0
+        ARANGO_CLUSTER: http://localhost:${{ job.services.arangodb.ports['8529'] }}
         ARANGO_AUTH: jwt
         ARANGO_AUTH_CACHE: disk
         ARANGO_AUTH_USERNAME: root
