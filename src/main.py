@@ -85,6 +85,7 @@ def test_amqp():
 def test_error():
     return Response(status_code=1 / 0)
 
+
 @app.get('/test_arango')
 def test_arango():
     with LazyItgs() as itgs:
