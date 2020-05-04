@@ -32,7 +32,7 @@ def get_valid_passwd_auth(
         itgs.logger.print(
             Level.TRACE,
             'User {} tried to login but they have no account',
-            users.username
+            auth.username
         )
         return None
     (user_id,) = row
