@@ -173,7 +173,7 @@ def get_auth_info_from_token_auth(
         return None
 
     # TODO: flag a last-seen-at in the cache which can be moved to the
-    # database in a background job
+    # database in a background job?
     return authid, user_id, expires_at
 
 
@@ -392,6 +392,62 @@ def cache_control_for_expires_at(expires_at, try_refresh_every=None, private=Tru
         f'stale-while-revalidate={stale_while_revalidate}, '
         f'stale-if-error=86400'
     )
+
+
+def get_permissions_from_header(itgs, authorization, permissions):
+    """A convenience method to get if authorization was provided, if it was
+    valid, and which (if any) of the specified permissions they have. This is
+    a good balance of convenience and versatility.
+
+    Example responses:
+        Omitted authorization header
+        (None, False, [])
+
+        Invalid authorization header
+        (None, True, [])
+
+        Valid authorization header for user 3, no permissions from list
+        (3, True, [])
+
+        Valid authorization header for user 7, with some permissions
+        (7, True, ['permission1', 'permission2'])
+
+    @param itgs The lazy integrations to use
+    @param authorization The authorization header provided
+    @param permissions The list of interesting permissions for this endpoint;
+        this will return the subset of these permissions which the user
+        actually has.
+    @return (int, bool, list) If they authorized successfully then the user id
+        otherwise None, if they provided an authorization header, and what
+        permissions from the given list of permissions they have.
+    """
+    if isinstance(permissions, str):
+        permissions = [permissions]
+
+    authtoken = get_authtoken_from_header(authorization)
+    if authtoken is None:
+        return (None, False, None)
+    info = get_auth_info_from_token_auth(
+        itgs, models.TokenAuthentication(token=authtoken)
+    )
+    if info is None:
+        return (None, True, None)
+    auth_id, user_id = info[:2]
+    if not permissions:
+        return (user_id, True, [])
+
+    perms = Table('permissions')
+    authtoken_perms = Table('authtoken_permissions')
+    itgs.read_cursor.execute(
+        Query.from_(authtoken_perms).select(perms.name)
+        .join(perms).on(perms.id == authtoken_perms.permission_id)
+        .where(perms.name.isin([Parameter('%s') for _ in permissions]))
+        .where(authtoken_perms.authtoken_id == Parameter('%s'))
+        .get_sql(),
+        (*permissions, auth_id)
+    )
+    perms_found = itgs.read_cursor.fetchall()
+    return (user_id, True, [i[0] for i in perms_found])
 
 
 def check_permissions_from_header(itgs, authorization, permissions):

@@ -41,3 +41,7 @@ def calculate_etag(itgs, loan_id) -> str:
 
     raw_str = f'{loan_id}-{updated_at.timestamp()}'
     return hashlib.sha256(raw_str.encode('ASCII')).hexdigest()
+
+
+def check_ratelimit(itgs, cost) -> bool:
+    pass
