@@ -18,6 +18,7 @@ class BasicLoanResponse(BaseModel):
     last_repaid_at: datetime = None
     repaid_at: datetime = None
     unpaid_at: datetime = None
+    deleted_at: datetime = None
 
 
 class LoanEvent(BaseModel):
