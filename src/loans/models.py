@@ -1,5 +1,4 @@
 """Contains the response and request models for loans"""
-from models import SuccessResponse
 from pydantic import BaseModel
 from datetime import datetime
 import typing

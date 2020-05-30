@@ -1,9 +1,8 @@
 """Helper file for loans"""
-from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
+from pypika import PostgreSQLQuery as Query, Table, Parameter
 from pypika.functions import Greatest
 import lbshared.ratelimits
 import hashlib
-import os
 from pydantic.error_wrappers import ValidationError
 from lblogging import Level
 
