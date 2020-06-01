@@ -24,7 +24,7 @@ def index(authorization: str = Header(None)):
 
 
 @router.get(
-    '/:loan_id/?',
+    '/{loan_id}/?',
     tags=['loans'],
     responses={
         200: {'description': 'Success', 'model': models.BasicLoanResponse},
@@ -127,19 +127,19 @@ def show(loan_id: int, authorization: str = Header(None)):
 
 
 @router.get(
-    '/:id/detailed',
+    '/{loan_id}/detailed',
     tags=['loans'],
     responses={
         200: {'description': 'Success', 'model': models.DetailedLoanResponse},
         404: {'description': 'Loan not found'}
     }
 )
-def show_detailed(id: int, authorization: str = Header(None)):
+def show_detailed(loan_id: int, authorization: str = Header(None)):
     pass
 
 
 @router.patch(
-    '/:id',
+    '/{loan_id}',
     tags=['loans'],
     responses={
         200: {'description': 'Success'},
@@ -150,5 +150,5 @@ def show_detailed(id: int, authorization: str = Header(None)):
         428: {'description': 'Missing the if-match header'}
     }
 )
-def update(id: int, if_match: str = Header(None), authorization: str = Header(None)):
+def update(loan_id: int, if_match: str = Header(None), authorization: str = Header(None)):
     pass
