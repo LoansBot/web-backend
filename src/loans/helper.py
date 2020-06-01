@@ -309,6 +309,7 @@ def get_loan_events(itgs, loan_id, perms):
             repayments.amount,
             repayment_events.created_at
         )
+        .join(repayments).on(repayments.id == repayment_events.repayment_id)
         .where(repayment_events.loan_id == Parameter('%s'))
         .get_sql(),
         (loan_id,)
