@@ -78,7 +78,7 @@ def calculate_etag(itgs, loan_id) -> str:
         ))
     )
     for tbl in event_tables:
-        q = q.join(tbl).on(loans.id == tbl.loan_id)
+        q = q.left_join(tbl).on(loans.id == tbl.loan_id)
     q = q.where(loans.id == Parameter('%s'))
 
     itgs.read_cursor.execute(
