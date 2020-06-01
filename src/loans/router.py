@@ -20,7 +20,7 @@ router = APIRouter()
     }
 )
 def index(authorization: str = Header(None)):
-    pass
+    return JSONResponse(content={'hello': 'there'}, status_code=200)
 
 
 @router.get(
@@ -39,9 +39,9 @@ def show(loan_id: int, authorization: str = Header(None)):
             itgs, authorization, (helper.DELETED_LOANS_PERM, *helper.RATELIMIT_PERMISSIONS)
         )
         if perms:
-            perms = tuple()
-        else:
             perms = tuple(perms)
+        else:
+            perms = tuple()
 
         if not helper.check_ratelimit(itgs, user_id, perms, 1):
             return Response(status_code=429)
