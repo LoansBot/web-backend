@@ -33,12 +33,12 @@ class AdminLoanEvent(LoanEvent):
     new_principal_repayment_minor: int
     old_created_at: float
     new_created_at: float
-    old_repaid_at: float
-    new_repaid_at: float
-    old_unpaid_at: float
-    new_unpaid_at: float
-    old_deleted_at: float
-    new_deleted_at: float
+    old_repaid_at: float = None
+    new_repaid_at: float = None
+    old_unpaid_at: float = None
+    new_unpaid_at: float = None
+    old_deleted_at: float = None
+    new_deleted_at: float = None
 
 
 class CreationLoanEvent(LoanEvent):
@@ -56,19 +56,7 @@ class RepaymentLoanEvent(LoanEvent):
 
 class DetailedLoanResponse(BaseModel):
     events: typing.List[LoanEvent]
-    lender: str
-    borrower: str
-    currency_code: str
-    currency_symbol: str
-    currency_symbol_on_left: bool
-    currency_exponent: int
-    principal_minor: int
-    principal_repayment_minor: int
-    created_at: float
-    last_repaid_at: float = None
-    repaid_at: float = None
-    unpaid_at: float = None
-    deleted_at: float = None
+    basic: BasicLoanResponse
 
 
 class LoansResponse(BaseModel):
