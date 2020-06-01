@@ -92,7 +92,9 @@ def show_detailed(loan_id: int, authorization: str = Header(None)):
 
         return JSONResponse(
             status_code=200,
-            content=models.DetailedLoanResponse(events=events, basic=basic),
+            content=models.DetailedLoanResponse(
+                events=events, basic=basic
+            ).dict(),
             headers={'etag': etag}
         )
 
