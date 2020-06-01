@@ -90,7 +90,7 @@ def calculate_etag(itgs, loan_id) -> str:
     if row is None:
         return None
 
-    (updated_at,) = row[0]
+    (updated_at,) = row
 
     raw_str = f'{loan_id}-{updated_at.timestamp()}'
     return hashlib.sha256(raw_str.encode('ASCII')).hexdigest()
