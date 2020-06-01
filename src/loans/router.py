@@ -86,7 +86,7 @@ def show_detailed(loan_id: int, authorization: str = Header(None)):
         if basic is None:
             return Response(status_code=404)
 
-        events = helper.get_events(itgs, loan_id, perms)
+        events = helper.get_loan_events(itgs, loan_id, perms)
 
         etag = helper.calculate_etag(itgs, loan_id)
 
