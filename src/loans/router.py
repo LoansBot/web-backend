@@ -79,7 +79,7 @@ def show_detailed(loan_id: int, authorization: str = Header(None)):
         else:
             perms = tuple()
 
-        if not helper.check_ratelimit(itgs, user_id, perms, 1):
+        if not helper.check_ratelimit(itgs, user_id, perms, 5):
             return Response(status_code=429)
 
         basic = helper.get_basic_loan_info(itgs, loan_id, perms)
