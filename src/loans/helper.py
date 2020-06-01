@@ -64,8 +64,7 @@ def calculate_etag(itgs, loan_id) -> str:
     """
     loans = Table('loans')
     event_tables = [Table(t) for t in [
-        'loan_admin_events', 'loan_creation_infos',
-        'loan_repayment_events', 'loan_unpaid_events'
+        'loan_admin_events', 'loan_repayment_events', 'loan_unpaid_events'
     ]]
     q = (
         Query.from_(loans)
