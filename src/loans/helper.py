@@ -1,6 +1,6 @@
 """Helper file for loans"""
 from pypika import PostgreSQLQuery as Query, Table, Parameter
-from pypika.functions import Greatest
+from lbshared.pypika_funcs import Greatest
 import lbshared.ratelimits
 import hashlib
 from pydantic.error_wrappers import ValidationError
