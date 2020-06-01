@@ -1,6 +1,5 @@
 """Contains the response and request models for loans"""
 from pydantic import BaseModel
-from datetime import datetime
 import typing
 
 
@@ -13,16 +12,16 @@ class BasicLoanResponse(BaseModel):
     currency_exponent: int
     principal_minor: int
     principal_repayment_minor: int
-    created_at: datetime
-    last_repaid_at: datetime = None
-    repaid_at: datetime = None
-    unpaid_at: datetime = None
-    deleted_at: datetime = None
+    created_at: float
+    last_repaid_at: float = None
+    repaid_at: float = None
+    unpaid_at: float = None
+    deleted_at: float = None
 
 
 class LoanEvent(BaseModel):
     event_type: str
-    occurred_at: datetime
+    occurred_at: float
 
 
 class AdminLoanEvent(LoanEvent):
@@ -32,14 +31,14 @@ class AdminLoanEvent(LoanEvent):
     new_principal_minor: int
     old_principal_repayment_minor: int
     new_principal_repayment_minor: int
-    old_created_at: datetime
-    new_created_at: datetime
-    old_repaid_at: datetime
-    new_repaid_at: datetime
-    old_unpaid_at: datetime
-    new_unpaid_at: datetime
-    old_deleted_at: datetime
-    new_deleted_at: datetime
+    old_created_at: float
+    new_created_at: float
+    old_repaid_at: float
+    new_repaid_at: float
+    old_unpaid_at: float
+    new_unpaid_at: float
+    old_deleted_at: float
+    new_deleted_at: float
 
 
 class CreationLoanEvent(LoanEvent):
@@ -65,11 +64,11 @@ class DetailedLoanResponse(BaseModel):
     currency_exponent: int
     principal_minor: int
     principal_repayment_minor: int
-    created_at: datetime
-    last_repaid_at: datetime = None
-    repaid_at: datetime = None
-    unpaid_at: datetime = None
-    deleted_at: datetime = None
+    created_at: float
+    last_repaid_at: float = None
+    repaid_at: float = None
+    unpaid_at: float = None
+    deleted_at: float = None
 
 
 class LoansResponse(BaseModel):

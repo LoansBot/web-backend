@@ -117,11 +117,11 @@ def show(loan_id: int, authorization: str = Header(None)):
                 currency_exponent=row[5],
                 principal_minor=row[6],
                 principal_repayment_minor=row[7],
-                created_at=row[8],
-                last_repaid_at=row[9],
-                repaid_at=row[10],
-                unpaid_at=row[11],
-                deleted_at=row[12]
+                created_at=row[8].timestamp(),
+                last_repaid_at=row[9].timestamp() if row[9] is not None else None,
+                repaid_at=row[10].timestamp() if row[10] is not None else None,
+                unpaid_at=row[11].timestamp() if row[11] is not None else None,
+                deleted_at=row[12].timestamp() if row[12] is not None else None
             ).dict()
         )
 
