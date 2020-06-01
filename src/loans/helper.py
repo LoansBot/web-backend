@@ -85,7 +85,7 @@ def calculate_etag(itgs, loan_id) -> str:
         q.get_sql(),
         (loan_id,)
     )
-    row = itgs.cursor.fetchone()
+    row = itgs.read_cursor.fetchone()
 
     if row is None:
         return None
