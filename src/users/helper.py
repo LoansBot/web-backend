@@ -25,7 +25,7 @@ def get_valid_passwd_auth(
         Query.from_(users).select(users.id)
         .where(users.username == Parameter('%s'))
         .limit(1).get_sql(),
-        (auth.username,)
+        (auth.username.lower(),)
     )
     row = itgs.read_cursor.fetchone()
     if row is None:
@@ -237,7 +237,7 @@ def create_new_user(
         .insert(Parameter('%s'))
         .returning(users.id)
         .get_sql(),
-        (username,)
+        (username.lower(),)
     )
     user_id = itgs.write_cursor.fetchone()[0]
     if commit:
