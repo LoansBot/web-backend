@@ -106,6 +106,8 @@ def show(loan_id: int, authorization: str = Header(None)):
         if row is None:
             return Response(status_code=404)
 
+        etag = helper.calculate_etag(itgs, loan_id)
+
         return JSONResponse(
             status_code=200,
             content=models.BasicLoanResponse(
@@ -122,7 +124,10 @@ def show(loan_id: int, authorization: str = Header(None)):
                 repaid_at=row[10].timestamp() if row[10] is not None else None,
                 unpaid_at=row[11].timestamp() if row[11] is not None else None,
                 deleted_at=row[12].timestamp() if row[12] is not None else None
-            ).dict()
+            ).dict(),
+            headers={
+                'etag': etag
+            }
         )
 
 
