@@ -235,7 +235,7 @@ def get_loan_events(itgs, loan_id, perms):
                     None
                     if creation_type != 0
                     else
-                    f'https://reddit.com/comments/{parent_fullname}/redditloans/{comment_fullname}'
+                    f'https://reddit.com/comments/{parent_fullname[3:]}/redditloans/{comment_fullname[3:]}'
                 )
             )
         )
