@@ -53,7 +53,10 @@ def show(loan_id: int, authorization: str = Header(None)):
         return JSONResponse(
             status_code=200,
             content=basic.dict(),
-            headers={'etag': etag}
+            headers={
+                'etag': etag,
+                'Cache-Control': 'public, max-age=604800'
+            }
         )
 
 
@@ -95,7 +98,10 @@ def show_detailed(loan_id: int, authorization: str = Header(None)):
             content=models.DetailedLoanResponse(
                 events=events, basic=basic
             ).dict(),
-            headers={'etag': etag}
+            headers={
+                'etag': etag,
+                'Cache-Control': 'public, max-age=604800'
+            }
         )
 
 
