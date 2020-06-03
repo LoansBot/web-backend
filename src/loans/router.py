@@ -5,6 +5,11 @@ from . import helper
 from models import ErrorResponse
 import users.helper
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
+import lbshared.queries
+from pypika import Table, Query, Parameter
+import math
+from datetime import datetime
+import sqlparse
 
 router = APIRouter()
 
@@ -17,8 +22,219 @@ router = APIRouter()
         422: {'description': 'Arguments could not be interpreted', 'model': ErrorResponse}
     }
 )
-def index(authorization: str = Header(None)):
-    return JSONResponse(content={'hello': 'there'}, status_code=200)
+def index(
+        loan_id: int = None,
+        after_time: int = None, before_time: int = None,
+        borrower_name: str = None, lender_name: str = None, user_operator: str = 'AND',
+        unpaid: bool = None, repaid: bool = None,
+        include_deleted: bool = False, limit: int = 25, fmt: int = 0,
+        dry_run: bool = False, dry_run_text: bool = False,
+        authorization: str = Header(None)):
+    if limit <= 0:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['limit'],
+                    'msg': 'Must be positive',
+                    'type': 'range_error'
+                }
+            }
+        )
+
+    if user_operator not in ('AND', 'OR'):
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['user_operator'],
+                    'msg': 'Must be AND or OR (defaults to AND)',
+                    'type': 'value_error'
+                }
+            }
+        )
+
+    if lender_name is None or borrower_name is None:
+        user_operator = 'AND'
+
+    request_cost = limit
+    if loan_id is not None:
+        request_cost = 1
+
+    if fmt == 0:
+        # You're doing what we want you to do! The only real cost for us is the
+        # postgres computations.
+        request_cost = math.ceil(math.log(request_cost + 1))
+    elif fmt == 1:
+        # This is essentially increasing our cost in exchange for simplifying
+        # their implementation. We will punish them for doing this in
+        # comparison to the approach we want them to take (fmt 0 then fetch
+        # each loan individually), but not too severely for small requests.
+        # They are going from log(N) + N to 2N
+        request_cost = 25 + request_cost * 2
+    else:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['fmt'],
+                    'msg': 'Must be 0 or 1 (defaults to 0)',
+                    'type': 'range_error'
+                }
+            }
+        )
+
+    with LazyItgs() as itgs:
+        user_id, _, perms = users.helper.get_permissions_from_header(
+            itgs, authorization, (helper.DELETED_LOANS_PERM, *helper.RATELIMIT_PERMISSIONS)
+        )
+        if perms:
+            perms = tuple(perms)
+        else:
+            perms = tuple()
+
+        if not helper.check_ratelimit(itgs, user_id, perms, 1 if dry_run else request_cost):
+            return Response(
+                status_code=429,
+                headers={'x-request-cost': request_cost}
+            )
+
+        loans = Table('loans')
+        usrs = Table('users')
+        lenders = usrs.as_('lenders')
+        borrowers = usrs.as_('borrowers')
+
+        args = []
+        if fmt == 0:
+            query = Query.from_(loans).select(loans.id)
+            joins = set()
+        else:
+            query = helper.get_basic_loan_info_query()
+            joins = {'lenders', 'borrowers'}
+
+        if loan_id is not None:
+            query = query.where(loans.id == Parameter(f'${len(args) + 1}'))
+            args.append(loan_id)
+
+        if after_time is not None:
+            after_datetime = datetime.fromtimestamp(after_time)
+            query = query.where(loans.created_at > Parameter(f'${len(args) + 1}'))
+            args.append(after_datetime)
+
+        if before_time is not None:
+            before_datetime = datetime.fromtimestamp(before_time)
+            query = query.where(loans.created_at < Parameter(f'${len(args) + 1}'))
+            args.append(before_datetime)
+
+        if borrower_name is not None:
+            if 'borrowers' not in joins:
+                query = query.join(borrowers).on(borrowers.id == loans.borrower_id)
+                joins.add('borrowers')
+
+            if user_operator == 'AND':
+                query = query.where(borrowers.username == Parameter(f'${len(args) + 1}'))
+                args.append(borrower_name.lower())
+
+        if lender_name is not None:
+            if 'lenders' not in joins:
+                query = query.join(lenders).on(lenders.id == loans.lender_id)
+                joins.add('lenders')
+
+            if user_operator == 'AND':
+                query = query.where(lenders.username == Parameter(f'${len(args) + 1}'))
+                args.append(lender_name.lower())
+
+        if user_operator == 'OR':
+            query = query.where(
+                lenders.username == Parameter(f'${len(args) + 1}') |
+                borrowers.username == Parameter(f'${len(args) + 2}')
+            )
+            args.append(lender_name.lower())
+            args.append(borrower_name.lower())
+
+        if unpaid is False:
+            query = query.where(loans.unpaid_at.isnull())
+        elif unpaid:
+            query = query.where(loans.unpaid_at.notnull())
+
+        if repaid is False:
+            query = query.where(loans.repaid_at.isnull())
+        elif repaid:
+            query = query.where(loans.repaid_at.notnull())
+
+        if helper.DELETED_LOANS_PERM not in perms or not include_deleted:
+            query = query.where(loans.deleted_at.isnull())
+
+        query = query.limit(limit)
+        sql = query.get_sql()
+        sql, args = lbshared.queries.convert_numbered_args(sql, args)
+
+        if dry_run:
+            func_args = f'''
+                loan_id: {loan_id}
+                after_time: {after_time},
+                before_time: {before_time},
+                borrower_name: {borrower_name},
+                lender_name: {lender_name},
+                user_operator: {user_operator},
+                unpaid: {unpaid},
+                repaid: {repaid},
+                include_deleted: {include_deleted},
+                limit: {limit},
+                fmt: {fmt},
+                dry_run: {dry_run},
+                dry_run_text: {dry_run_text},
+                authorization: <REDACTED> (null? {authorization is None})
+            '''
+            formatted_sql = sqlparse.format(sql, keyword_case='upper', reindent=True)
+            if dry_run_text:
+                return Response(
+                    status_code=200,
+                    content=(
+                        f'Your request had the following arguments:\n\n```{func_args}```\n\n '
+                        + 'It would have executed the following SQL:\n\n```\n'
+                        + formatted_sql + '\n```\n\n'
+                        + 'With the following arguments:\n\n```'
+                        + '\n'.join([str(s) for s in args])
+                        + '\n```\n\n'
+                        + f'The request would have cost {request_cost} towards your quota.'
+                    ),
+                    headers={
+                        'Content-Type': 'text/plain',
+                        'x-request-cost': 1
+                    }
+                )
+
+            return JSONResponse(
+                status_code=200,
+                content={
+                    'func_args': func_args,
+                    'query': sql,
+                    'formatted_query': formatted_sql,
+                    'query_args': args,
+                    'request_cost': request_cost
+                },
+                headers={
+                    'x-request-cost': 1
+                }
+            )
+
+        itgs.read_cursor.execute(sql, args)
+        if fmt == 0:
+            result = itgs.read_cursor.fetchall()
+            result = [i[0] for i in result]
+        else:
+            result = []
+            row = itgs.read_cursor.fetchone()
+            while row is not None:
+                result.append(helper.parse_basic_loan_info(row))
+                row = itgs.read_cursor.fetchone()
+
+        return JSONResponse(
+            content=result, status_code=200, headers={
+                'x-request-cost': request_cost
+            }
+        )
 
 
 @router.get(

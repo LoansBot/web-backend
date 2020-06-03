@@ -107,6 +107,27 @@ def get_basic_loan_info(itgs, loan_id, perms):
     the user has permission to view the loan. Otherwise, returns None
     """
     loans = Table('loans')
+    query = get_basic_loan_info_query().where(loans.id == Parameter('%s'))
+
+    if DELETED_LOANS_PERM not in perms:
+        query = query.where(loans.deleted_at.isnull())
+
+    args = (loan_id,)
+
+    itgs.read_cursor.execute(
+        query.get_sql(),
+        args
+    )
+    row = itgs.read_cursor.fetchone()
+    if row is None:
+        return None
+
+    return parse_basic_loan_info(row)
+
+
+def get_basic_loan_info_query():
+    """Get the basic query that we use for fetching a loans information"""
+    loans = Table('loans')
     usrs = Table('users')
     moneys = Table('moneys')
     lenders = usrs.as_('lenders')
@@ -151,21 +172,14 @@ def get_basic_loan_info(itgs, loan_id, perms):
         .join(principal_currencies).on(principal_currencies.id == principals.currency_id)
         .join(principal_repayments).on(principal_repayments.id == loans.principal_repayment_id)
         .join(latest_repayments).on(latest_repayments.loan_id == loans.id)
-        .where(loans.id == Parameter('%s'))
     )
-    args = (loan_id,)
 
-    if DELETED_LOANS_PERM not in perms:
-        query = query.where(loans.deleted_at.isnull())
+    return query
 
-    itgs.read_cursor.execute(
-        query.get_sql(),
-        args
-    )
-    row = itgs.read_cursor.fetchone()
-    if row is None:
-        return None
 
+def parse_basic_loan_info(row):
+    """Parses a row returned from a basic loan info query into the basic loan
+    response."""
     return models.BasicLoanResponse(
         lender=row[0],
         borrower=row[1],
@@ -420,9 +434,12 @@ def check_ratelimit(itgs, user_id, permissions, cost) -> bool:
         )
 
     if RATELIMIT_WHITELIST_PERM not in permissions:
-        acceptable = (
-            lbshared.ratelimits.consume(itgs, GLOBAL_RATELIMITS, 'global', cost)
-            and acceptable
-        )
+        if acceptable:
+            acceptable = lbshared.ratelimits.consume(itgs, GLOBAL_RATELIMITS, 'global', cost)
+        else:
+            # This request is definitely going to be cheap since we're
+            # not doing anything, so we're not going to punish everyone
+            # else for more than just a simple request
+            lbshared.ratelimits.consume(itgs, GLOBAL_RATELIMITS, 'global', 1)
 
     return acceptable
