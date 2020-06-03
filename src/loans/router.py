@@ -96,7 +96,7 @@ def index(
         if not helper.check_ratelimit(itgs, user_id, perms, 1 if dry_run else request_cost):
             return Response(
                 status_code=429,
-                headers={'x-request-cost': request_cost}
+                headers={'x-request-cost': str(request_cost)}
             )
 
         loans = Table('loans')
@@ -201,7 +201,7 @@ def index(
                     ),
                     headers={
                         'Content-Type': 'text/plain',
-                        'x-request-cost': 1
+                        'x-request-cost': '1'
                     }
                 )
 
@@ -215,7 +215,7 @@ def index(
                     'request_cost': request_cost
                 },
                 headers={
-                    'x-request-cost': 1
+                    'x-request-cost': '1'
                 }
             )
 
@@ -232,7 +232,7 @@ def index(
 
         return JSONResponse(
             content=result, status_code=200, headers={
-                'x-request-cost': request_cost
+                'x-request-cost': str(request_cost)
             }
         )
 
