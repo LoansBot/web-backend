@@ -146,8 +146,8 @@ def index(
 
         if user_operator == 'OR':
             query = query.where(
-                lenders.username == Parameter(f'${len(args) + 1}') |
-                borrowers.username == Parameter(f'${len(args) + 2}')
+                (lenders.username == Parameter(f'${len(args) + 1}'))
+                | (borrowers.username == Parameter(f'${len(args) + 2}'))
             )
             args.append(lender_name.lower())
             args.append(borrower_name.lower())
