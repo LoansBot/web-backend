@@ -192,7 +192,7 @@ def index(
                 return Response(
                     status_code=200,
                     content=(
-                        f'Your request had the following arguments:\n\n```{func_args}\n```\n\n '
+                        f'Your request had the following arguments:\n\n```\n{func_args}\n```\n\n '
                         + 'It would have executed the following SQL:\n\n```\n'
                         + formatted_sql + '\n```\n\n'
                         + 'With the following arguments:\n\n```\n'
