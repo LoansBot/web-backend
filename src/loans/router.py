@@ -227,7 +227,7 @@ def index(
             result = []
             row = itgs.read_cursor.fetchone()
             while row is not None:
-                result.append(helper.parse_basic_loan_info(row))
+                result.append(helper.parse_basic_loan_info(row).dict())
                 row = itgs.read_cursor.fetchone()
 
         return JSONResponse(
