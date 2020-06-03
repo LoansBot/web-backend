@@ -186,6 +186,7 @@ def index(
                 dry_run_text: {dry_run_text},
                 authorization: <REDACTED> (null? {authorization is None})
             '''
+            func_args = '\n'.join([l.strip() for l in func_args.splitlines() if l.strip()])
             formatted_sql = sqlparse.format(sql, keyword_case='upper', reindent=True)
             if dry_run_text:
                 return Response(
