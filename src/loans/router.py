@@ -191,7 +191,8 @@ def index(
         elif repaid:
             query = query.where(loans.repaid_at.notnull())
 
-        if helper.DELETED_LOANS_PERM not in perms or not include_deleted:
+        can_see_deleted = helper.DELETED_LOANS_PERM in perms
+        if not can_see_deleted or not include_deleted:
             query = query.where(loans.deleted_at.isnull())
 
         if order == 'date_desc':
@@ -209,19 +210,19 @@ def index(
 
         if dry_run:
             func_args = f'''
-                loan_id: {loan_id}
+                loan_id: {loan_id},
                 after_id: {after_id},
                 before_id: {before_id},
                 after_time: {after_time},
                 before_time: {before_time},
-                borrower_name: {borrower_name},
-                lender_name: {lender_name},
-                user_operator: {user_operator}, (accepts AND or OR)
+                borrower_name: '{borrower_name}',
+                lender_name: '{lender_name}',
+                user_operator: '{user_operator}', (accepts ('AND', 'OR'))
                 unpaid: {unpaid},
                 repaid: {repaid},
-                include_deleted: {include_deleted},
+                include_deleted: {include_deleted} (ignored? {not can_see_deleted}),
                 limit: {limit},
-                order: {order}, (accepts {acceptable_orders})
+                order: '{order}', (accepts {acceptable_orders})
                 fmt: {fmt},
                 dry_run: {dry_run},
                 dry_run_text: {dry_run_text},
