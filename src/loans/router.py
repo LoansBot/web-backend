@@ -217,16 +217,16 @@ def index(
                 before_time: {before_time},
                 borrower_name: '{borrower_name}',
                 lender_name: '{lender_name}',
-                user_operator: '{user_operator}', (accepts ('AND', 'OR'))
+                user_operator: '{user_operator}'; (accepts ('AND', 'OR')),
                 unpaid: {unpaid},
                 repaid: {repaid},
-                include_deleted: {include_deleted} (ignored? {not can_see_deleted}),
+                include_deleted: {include_deleted}; (ignored? ({not can_see_deleted})),
                 limit: {limit},
-                order: '{order}', (accepts {acceptable_orders})
+                order: '{order}'; (accepts {acceptable_orders}),
                 fmt: {fmt},
                 dry_run: {dry_run},
                 dry_run_text: {dry_run_text},
-                authorization: <REDACTED> (null? {authorization is None})
+                authorization: <REDACTED>; (null? ({authorization is None}))
             '''
             func_args = '\n'.join([l.strip() for l in func_args.splitlines() if l.strip()])
             formatted_sql = sqlparse.format(sql, keyword_case='upper', reindent=True)
