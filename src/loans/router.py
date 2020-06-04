@@ -6,7 +6,7 @@ from models import ErrorResponse
 import users.helper
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 import lbshared.queries
-from pypika import Table, Query, Parameter
+from pypika import Table, Query, Parameter, Order
 import math
 from datetime import datetime
 import sqlparse
@@ -24,11 +24,12 @@ router = APIRouter()
 )
 def index(
         loan_id: int = None,
+        after_id: int = None, before_id: int = None,
         after_time: int = None, before_time: int = None,
         borrower_name: str = None, lender_name: str = None, user_operator: str = 'AND',
         unpaid: bool = None, repaid: bool = None,
-        include_deleted: bool = False, limit: int = 25, fmt: int = 0,
-        dry_run: bool = False, dry_run_text: bool = False,
+        include_deleted: bool = False, order: str = 'natural', limit: int = 25,
+        fmt: int = 0, dry_run: bool = False, dry_run_text: bool = False,
         authorization: str = Header(None)):
     if limit <= 0:
         return JSONResponse(
@@ -57,7 +58,27 @@ def index(
     if lender_name is None or borrower_name is None:
         user_operator = 'AND'
 
+    acceptable_orders = ('natural', 'date_desc', 'date_asc', 'id_desc', 'id_asc')
+    if order not in acceptable_orders:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['order'],
+                    'msg': f'Must be one of {acceptable_orders}',
+                    'type': 'value_error'
+                }
+            }
+        )
+
     request_cost = limit
+
+    if order != 'natural':
+        # This isn't significantly more theoretically expensive since every
+        # sort is indexed, but it is probably less cache-local which is
+        # going to inflate the cost
+        request_cost *= 2
+
     if loan_id is not None:
         request_cost = 1
 
@@ -116,6 +137,14 @@ def index(
             query = query.where(loans.id == Parameter(f'${len(args) + 1}'))
             args.append(loan_id)
 
+        if after_id is not None:
+            query = query.where(loans.id > Parameter(f'${len(args) + 1}'))
+            args.append(after_id)
+
+        if before_id is not None:
+            query = query.where(loans.id < Parameter(f'${len(args) + 1}'))
+            args.append(before_id)
+
         if after_time is not None:
             after_datetime = datetime.fromtimestamp(after_time)
             query = query.where(loans.created_at > Parameter(f'${len(args) + 1}'))
@@ -165,6 +194,15 @@ def index(
         if helper.DELETED_LOANS_PERM not in perms or not include_deleted:
             query = query.where(loans.deleted_at.isnull())
 
+        if order == 'date_desc':
+            query = query.orderby(loans.created_at, order=Order.desc)
+        elif order == 'date_asc':
+            query = query.orderby(loans.created_at)
+        elif order == 'id_desc':
+            query = query.orderby(loans.id, order=Order.desc)
+        elif order == 'id_asc':
+            query = query.orderby(loans.id)
+
         query = query.limit(limit)
         sql = query.get_sql()
         sql, args = lbshared.queries.convert_numbered_args(sql, args)
@@ -172,15 +210,18 @@ def index(
         if dry_run:
             func_args = f'''
                 loan_id: {loan_id}
+                after_id: {after_id},
+                before_id: {before_id},
                 after_time: {after_time},
                 before_time: {before_time},
                 borrower_name: {borrower_name},
                 lender_name: {lender_name},
-                user_operator: {user_operator},
+                user_operator: {user_operator}, (accepts AND or OR)
                 unpaid: {unpaid},
                 repaid: {repaid},
                 include_deleted: {include_deleted},
                 limit: {limit},
+                order: {order}, (accepts {acceptable_orders})
                 fmt: {fmt},
                 dry_run: {dry_run},
                 dry_run_text: {dry_run_text},
