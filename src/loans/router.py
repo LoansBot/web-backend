@@ -10,6 +10,7 @@ from pypika import Table, Query, Parameter, Order
 import math
 from datetime import datetime
 import sqlparse
+import time
 
 router = APIRouter()
 
@@ -67,6 +68,31 @@ def index(
                     'loc': ['order'],
                     'msg': f'Must be one of {acceptable_orders}',
                     'type': 'value_error'
+                }
+            }
+        )
+
+    now_time = time.time()
+    if before_time is not None and before_time > now_time * 10:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['before_time'],
+                    'msg': 'Absurd value; are you using milliseconds instead of seconds?',
+                    'type': 'range_error'
+                }
+            }
+        )
+
+    if after_time is not None and after_time > now_time * 10:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['after_time'],
+                    'msg': 'Absurd value; are you using milliseconds instead of seconds?',
+                    'type': 'range_error'
                 }
             }
         )
