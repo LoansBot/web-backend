@@ -97,6 +97,12 @@ def index(
             }
         )
 
+    if lender_name == '':
+        lender_name = None
+
+    if borrower_name == '':
+        borrower_name = None
+
     request_cost = limit
 
     if order != 'natural':
