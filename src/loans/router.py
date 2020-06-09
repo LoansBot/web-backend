@@ -205,7 +205,7 @@ def index(
                 query = query.where(lenders.username == Parameter(f'${len(args) + 1}'))
                 args.append(lender_name.lower())
 
-        if user_operator == 'OR':
+        if user_operator == 'OR' and borrower_name is not None and lender_name is not None:
             query = query.where(
                 (lenders.username == Parameter(f'${len(args) + 1}'))
                 | (borrowers.username == Parameter(f'${len(args) + 2}'))
