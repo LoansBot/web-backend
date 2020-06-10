@@ -171,7 +171,7 @@ def get_basic_loan_info_query():
         .join(principals).on(principals.id == loans.principal_id)
         .join(principal_currencies).on(principal_currencies.id == principals.currency_id)
         .join(principal_repayments).on(principal_repayments.id == loans.principal_repayment_id)
-        .join(latest_repayments).on(latest_repayments.loan_id == loans.id)
+        .left_join(latest_repayments).on(latest_repayments.loan_id == loans.id)
     )
 
     return query
