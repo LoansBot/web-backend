@@ -58,7 +58,7 @@ def verify_captcha(itgs, token: typing.Optional[str]) -> bool:
     return json['success']
 
 
-def ratelimit(itgs, environ_key, key_prefix, defaults=None) -> bool:
+def ratelimit(itgs, environ_key, key_prefix, defaults=None, cost=1) -> bool:
     """Ratelimits a resource by preventing more than a given number of requests
     from occurring in a given interval. The ratelimiting amounts may be
     specified in environment variables. We use an ephemeral cache to store how
@@ -95,6 +95,9 @@ def ratelimit(itgs, environ_key, key_prefix, defaults=None) -> bool:
     if there is an error with one of the settings or we just reached a rate
     limiting threshold, which won't happen on most requests so if a logger is
     not otherwise going to be used it should be initialized only if needed.
+
+    The cost of the request may be any integer value, and it will decide how
+    much of the ratelimit is consumed by this request. Typically this is 1.
     """
     if os.environ.get('RATELIMIT_DISABLED', '0') != '0':
         return True
@@ -127,17 +130,17 @@ def ratelimit(itgs, environ_key, key_prefix, defaults=None) -> bool:
             continue
 
         cache_key = f'{key_prefix}_{interval}'
-        cnt_now = itgs.cache.incr(cache_key, 1)
+        cnt_now = itgs.cache.incr(cache_key, cost)
         if cnt_now is None:
-            if itgs.cache.add(cache_key, 1, expire=interval, noreply=False):
-                cnt_now = 1
+            if itgs.cache.add(cache_key, cost, expire=interval, noreply=False):
+                cnt_now = cost
             else:
-                cnt_now = itgs.cache.incr(cache_key, 1)
+                cnt_now = itgs.cache.incr(cache_key, cost)
 
         if cnt_now > max_num:
             succ = False
 
-            if cnt_now == max_num + 1:
+            if cnt_now - cost < max_num:
                 itgs.logger.print(
                     Level.WARN,
                     'Rate-limiting initiated: {} requests in {} exceeds {}',

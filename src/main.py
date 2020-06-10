@@ -7,6 +7,7 @@ import secrets
 import users.router
 import logs.router
 import responses.router
+import loans.router
 import traceback
 
 
@@ -18,6 +19,7 @@ app.add_middleware(BlanketCORSMiddleware)
 app.include_router(users.router.router, prefix='/users')
 app.include_router(logs.router.router, prefix='/logs')
 app.include_router(responses.router.router, prefix='/responses')
+app.include_router(loans.router.router, prefix='/loans')
 
 
 @app.exception_handler(Exception)
