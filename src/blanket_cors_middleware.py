@@ -6,11 +6,11 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 ALL_METHODS = ("DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT")
 ALWAYS_ALLOWED_HEADERS = [
-    'Cache-Control',
-    'Content-Type',
-    'Etag',
-    'If-Match',
-    'If-None-Match'
+    'cache-control',
+    'content-type',
+    'etag',
+    'if-match',
+    'if-none-match'
 ]
 
 
@@ -48,7 +48,10 @@ class BlanketCORSMiddleware:
             'Access-Control-Allow-Origin': requested_origin
         }
         headers["Access-Control-Allow-Headers"] = (
-            ','.join([i for i in (ALWAYS_ALLOWED_HEADERS + requested_headers.split(',')) if i])
+            ','.join(list(frozenset([
+                i.lower() for i in (ALWAYS_ALLOWED_HEADERS + requested_headers.split(','))
+                if i
+            ])))
         )
 
         return PlainTextResponse("OK", status_code=200, headers=headers)
