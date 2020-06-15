@@ -9,7 +9,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import Response, JSONResponse
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 import lbshared.queries
-from pypika import Table, Query, Parameter
+from pypika import Table, PostgreSQLQuery as Query, Parameter
 import lbshared.convert
 from datetime import datetime
 import sqlparse
