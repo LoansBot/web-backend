@@ -11,10 +11,11 @@ import os
 import uuid
 import time
 import json
+from .edit_router import router as edit_router
 
 
 router = APIRouter()
-
+router.include_router(edit_router)
 
 @router.post(
     '/login',

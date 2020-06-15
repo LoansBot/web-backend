@@ -394,19 +394,3 @@ def show_detailed(loan_id: int, authorization: str = Header(None)):
                 'Cache-Control': 'public, max-age=604800'
             }
         )
-
-
-@router.patch(
-    '/{loan_id}',
-    tags=['loans'],
-    responses={
-        200: {'description': 'Success'},
-        401: {'description': 'Missing authentication'},
-        403: {'description': 'Bad authentication'},
-        404: {'description': 'Loan not found'},
-        412: {'description': 'Etag does not match If-Match header'},
-        428: {'description': 'Missing the if-match header'}
-    }
-)
-def update(loan_id: int, if_match: str = Header(None), authorization: str = Header(None)):
-    pass
