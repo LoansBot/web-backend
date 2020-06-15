@@ -276,11 +276,11 @@ def update(
         # )
 
         if not dry_run:
-            itgs.conn.commit()
+            itgs.write_conn.commit()
             itgs.logger.print(Level.INFO, 'Admin user {} just modified loan {}', user_id, loan_id)
             return Response(status_code=200)
         else:
-            itgs.conn.rollback()
+            itgs.write_conn.rollback()
 
             fmtted_admin_event_insert_sql = sqlparse.format(
                 admin_event_insert_sql, keyword_case='upper', reindent=True
