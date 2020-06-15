@@ -10,7 +10,6 @@ from fastapi.responses import Response, JSONResponse
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 import lbshared.queries
 from pypika import Table, Query, Parameter
-from pypika.functions import Now
 import lbshared.convert
 from datetime import datetime
 import sqlparse
@@ -137,7 +136,6 @@ def update(
         update_query = (
             Query.update(loans)
             .where(loans.id == Parameter('$1'))
-            .set(loans.updated_at, Now())
         )
         update_params = [loan_id]
 
@@ -271,9 +269,11 @@ def update(
         itgs.write_cursor.execute(
             admin_event_insert_sql, admin_event_insert_params
         )
-        itgs.write_cursor.execute(
-            update_loan_sql, update_loan_params
-        )
+
+        if update_loan_sql.strip():
+            itgs.write_cursor.execute(
+                update_loan_sql, update_loan_params
+            )
 
         if not dry_run:
             itgs.write_conn.commit()
