@@ -63,7 +63,7 @@ def update(
 
         itgs.read_cursor.execute(
             Query.from_(loans).select(currencies.id, currencies.code)
-            .join(principals).on(principals.id == loans.id)
+            .join(principals).on(principals.id == loans.principal_id)
             .join(currencies).on(currencies.id == principals.currency_id)
             .where(loans.id == Parameter('%s'))
             .get_sql(),
