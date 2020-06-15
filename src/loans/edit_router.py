@@ -41,7 +41,7 @@ def update(
         return Response(status_code=428)
 
     with LazyItgs(no_read_only=True) as itgs:
-        has_perm, user_id = users.helper.get_permissions_from_header(
+        has_perm, user_id = users.helper.check_permissions_from_header(
             itgs, authorization, (helper.EDIT_LOANS_PERMISSION,)
         )
 
