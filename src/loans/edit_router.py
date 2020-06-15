@@ -10,6 +10,7 @@ from fastapi.responses import Response, JSONResponse
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 import lbshared.queries
 from pypika import Table, Query, Parameter
+from pypika.functions import Now
 import lbshared.convert
 from datetime import datetime
 import sqlparse
@@ -126,9 +127,9 @@ def update(
             )
         )
 
-        select_query = (
-            Query.select(Parameter('$1'), Parameter('$2'), Parameter('$3'))
-            .from_(loans)
+        query = (
+            query.from_(loans)
+            .select(Parameter('$1'), Parameter('$2'), Parameter('$3'))
             .where(loans.id == Parameter('$1'))
         )
         query_params = [loan_id, user_id, loan.reason]
@@ -136,13 +137,14 @@ def update(
         update_query = (
             Query.update(loans)
             .where(loans.id == Parameter('$1'))
+            .set(loans.updated_at, Now())
         )
         update_params = [loan_id]
 
         # Principal
-        select_query = select_query.select(loans.principal_id)
+        query = query.select(loans.principal_id)
         if loan.principal_minor is None:
-            select_query = select_query.select(loans.principal_id)
+            query = query.select(loans.principal_id)
         else:
             usd_amount = (
                 loan.principal_minor * (1 / lbshared.convert.convert(itgs, 'USD', currency_code))
@@ -158,7 +160,7 @@ def update(
                 (currency_id, loan.principal_minor, usd_amount)
             )
             (new_principal_id,) = itgs.write_cursor.fetchone()
-            select_query = select_query.select(Parameter(f'${len(query_params) + 1}'))
+            query = query.select(Parameter(f'${len(query_params) + 1}'))
             query_params.append(new_principal_id)
 
             update_query = update_query.set(
@@ -166,9 +168,9 @@ def update(
             update_params.append(new_principal_id)
 
         # Principal Repayment
-        select_query = select_query.select(loans.principal_repayment_id)
+        query = query.select(loans.principal_repayment_id)
         if loan.principal_repayment_minor is None:
-            select_query = select_query.select(loans.principal_repayment_id)
+            query = query.select(loans.principal_repayment_id)
         else:
             usd_amount = (
                 loan.principal_repayment_minor * (
@@ -186,7 +188,7 @@ def update(
                 (currency_id, loan.principal_repayment_minor, usd_amount)
             )
             (new_principal_repayment_id,) = itgs.write_cursor.fetchone()
-            select_query = select_query.select(Parameter(f'${len(query_params) + 1}'))
+            query = query.select(Parameter(f'${len(query_params) + 1}'))
             query_params.append(new_principal_repayment_id)
 
             update_query = update_query.set(
@@ -194,12 +196,12 @@ def update(
             update_params.append(new_principal_repayment_id)
 
         # Created At
-        select_query = select_query.select(loans.created_at)
+        query = query.select(loans.created_at)
         if loan.created_at is None:
-            select_query = select_query.select(loans.created_at)
+            query = query.select(loans.created_at)
         else:
             new_created_at = datetime.fromtimestamp(loan.created_at)
-            select_query = select_query.select(Parameter(f'${len(query_params) + 1}'))
+            query = query.select(Parameter(f'${len(query_params) + 1}'))
             query_params.append(new_created_at)
 
             update_query = update_query.set(
@@ -207,11 +209,11 @@ def update(
             update_params.append(new_created_at)
 
         # Repaid
-        select_query = select_query.select(loans.repaid_at)
+        query = query.select(loans.repaid_at)
         if is_repaid is None:
-            select_query = select_query.select(loans.repaid_at)
+            query = query.select(loans.repaid_at)
         else:
-            select_query = select_query.select(Parameter(f'${len(query_params) + 1}'))
+            query = query.select(Parameter(f'${len(query_params) + 1}'))
             update_query = update_query.set(
                 loans.repaid_at, Parameter(f'${len(update_params) + 1}'))
             if is_repaid:
@@ -223,17 +225,17 @@ def update(
                 update_params.append(None)
 
         # Unpaid
-        select_query = select_query.select(loans.unpaid_at)
+        query = query.select(loans.unpaid_at)
         if is_repaid:
-            select_query = select_query.select(Parameter(f'${len(query_params) + 1}'))
+            query = query.select(Parameter(f'${len(query_params) + 1}'))
             update_query = update_query.set(
                 loans.unpaid_at, Parameter(f'${len(update_params) + 1}'))
             query_params.append(None)
             update_params.append(None)
         elif loan.unpaid is None:
-            select_query = select_query.select(loans.unpaid_at)
+            query = query.select(loans.unpaid_at)
         else:
-            select_query = select_query.select(Parameter(f'${len(query_params) + 1}'))
+            query = query.select(Parameter(f'${len(query_params) + 1}'))
             update_query = update_query.set(
                 loans.unpaid_at, Parameter(f'${len(update_params) + 1}'))
             if loan.unpaid:
@@ -245,11 +247,11 @@ def update(
                 update_params.append(None)
 
         # Deleted
-        select_query = select_query.select(loans.deleted_at)
+        query = query.select(loans.deleted_at)
         if loan.deleted is None:
-            select_query = select_query.select(loans.deleted_at)
+            query = query.select(loans.deleted_at)
         else:
-            select_query = select_query.select(Parameter(f'${len(query_params) + 1}'))
+            query = query.select(Parameter(f'${len(query_params) + 1}'))
             update_query = update_query.set(
                 loans.unpaid_at, Parameter(f'${len(update_params) + 1}'))
             if loan.deleted:
@@ -259,8 +261,6 @@ def update(
             else:
                 query_params.append(None)
                 update_params.append(None)
-
-        query = query.insert(select_query)
 
         admin_event_insert_sql, admin_event_insert_params = (
             lbshared.queries.convert_numbered_args(query.get_sql(), query_params)
