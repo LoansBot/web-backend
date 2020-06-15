@@ -268,12 +268,12 @@ def update(
         update_loan_sql, update_loan_params = (
             lbshared.queries.convert_numbered_args(update_query.get_sql(), update_params)
         )
-        # itgs.write_cursor.execute(
-        #     admin_event_insert_sql, admin_event_insert_params
-        # )
-        # itgs.write_cursor.execute(
-        #     update_loan_sql, update_loan_params
-        # )
+        itgs.write_cursor.execute(
+            admin_event_insert_sql, admin_event_insert_params
+        )
+        itgs.write_cursor.execute(
+            update_loan_sql, update_loan_params
+        )
 
         if not dry_run:
             itgs.write_conn.commit()
