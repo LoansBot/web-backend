@@ -152,9 +152,9 @@ def update(
                     moneys.currency_id,
                     moneys.amount,
                     moneys.amount_usd_cents
-                ).insert(*[Parameter('%s') for _ in range(3)])
-                .returning(moneys.id)
-                .get_sql(),
+                ).insert(
+                    *[Parameter('%s') for _ in range(3)]
+                ).returning(moneys.id).get_sql(),
                 (currency_id, loan.principal_minor, usd_amount)
             )
             (new_principal_id,) = itgs.write_cursor.fetchone()
@@ -180,9 +180,9 @@ def update(
                     moneys.currency_id,
                     moneys.amount,
                     moneys.amount_usd_cents
-                ).insert(*[Parameter('%s') for _ in range(3)])
-                .returning(moneys.id)
-                .get_sql(),
+                ).insert(
+                    *[Parameter('%s') for _ in range(3)]
+                ).returning(moneys.id).get_sql(),
                 (currency_id, loan.principal_repayment_minor, usd_amount)
             )
             (new_principal_repayment_id,) = itgs.write_cursor.fetchone()
