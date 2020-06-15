@@ -11,8 +11,11 @@ import math
 from datetime import datetime
 import sqlparse
 import time
+from .edit_router import router as edit_router
+
 
 router = APIRouter()
+router.include_router(edit_router)
 
 
 @router.get(

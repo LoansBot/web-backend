@@ -1,11 +1,9 @@
 """This router contains the edit-a-loan endpoints that only moderators use.
 """
 from lblogging import Level
-from . import models
 import users.helper
 from . import edit_models
 from . import helper
-from models import ErrorResponse
 from fastapi import APIRouter, Header
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import Response, JSONResponse
@@ -16,7 +14,9 @@ import lbshared.convert
 from datetime import datetime
 import sqlparse
 
+
 router = APIRouter()
+
 
 @router.put(
     '/{loan_id}',

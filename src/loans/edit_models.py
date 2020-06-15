@@ -1,6 +1,5 @@
 """Contains the response and request models for editing loans"""
 from pydantic import BaseModel, validator
-import typing
 import time
 
 
