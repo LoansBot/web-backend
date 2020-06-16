@@ -88,5 +88,5 @@ class BlanketCORSMiddleware:
         message.setdefault("headers", [])
         headers = MutableHeaders(scope=message)
         headers['Access-Control-Allow-Origin'] = origin
-        headers['Access-Control-Expose-Headers'] = ALWAYS_EXPOSED_HEADERS
+        headers['Access-Control-Expose-Headers'] = ','.join(ALWAYS_EXPOSED_HEADERS)
         await send(message)
