@@ -47,12 +47,14 @@ class BlanketCORSMiddleware:
             'Access-Control-Max-Age': '600',
             'Access-Control-Allow-Origin': requested_origin
         }
-        headers["Access-Control-Allow-Headers"] = (
-            ','.join(list(frozenset([
-                i.lower() for i in (ALWAYS_ALLOWED_HEADERS + requested_headers.split(','))
-                if i
-            ])))
-        )
+
+        client_headers = ','.join(list(frozenset([
+            i.lower() for i in (ALWAYS_ALLOWED_HEADERS + requested_headers.split(','))
+            if i
+        ])))
+
+        headers["Access-Control-Allow-Headers"] = client_headers
+        headers["Access-Control-Expose-Headers"] = client_headers
 
         return PlainTextResponse("OK", status_code=200, headers=headers)
 
