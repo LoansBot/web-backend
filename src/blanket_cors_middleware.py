@@ -12,6 +12,16 @@ ALWAYS_ALLOWED_HEADERS = [
     'if-match',
     'if-none-match'
 ]
+ALWAYS_EXPOSED_HEADERS = [
+    'cache-control',
+    'content-language',
+    'content-length',
+    'content-type',
+    'expires',
+    'last-modified',
+    'pragma',
+    'etag'
+]
 
 
 class BlanketCORSMiddleware:
@@ -47,14 +57,12 @@ class BlanketCORSMiddleware:
             'Access-Control-Max-Age': '600',
             'Access-Control-Allow-Origin': requested_origin
         }
-
-        client_headers = ','.join(list(frozenset([
-            i.lower() for i in (ALWAYS_ALLOWED_HEADERS + requested_headers.split(','))
-            if i
-        ])))
-
-        headers["Access-Control-Allow-Headers"] = client_headers
-        headers["Access-Control-Expose-Headers"] = client_headers
+        headers["Access-Control-Allow-Headers"] = (
+            ','.join(list(frozenset([
+                i.lower() for i in (ALWAYS_ALLOWED_HEADERS + requested_headers.split(','))
+                if i
+            ])))
+        )
 
         return PlainTextResponse("OK", status_code=200, headers=headers)
 
@@ -80,4 +88,5 @@ class BlanketCORSMiddleware:
         message.setdefault("headers", [])
         headers = MutableHeaders(scope=message)
         headers['Access-Control-Allow-Origin'] = origin
+        headers['Access-Control-Expose-Headers'] = ALWAYS_EXPOSED_HEADERS
         await send(message)
