@@ -251,7 +251,7 @@ def update(
         else:
             query = query.select(Parameter(f'${len(query_params) + 1}'))
             update_query = update_query.set(
-                loans.unpaid_at, Parameter(f'${len(update_params) + 1}'))
+                loans.deleted_at, Parameter(f'${len(update_params) + 1}'))
             if loan.deleted:
                 val = datetime.now()
                 query_params.append(val)
