@@ -544,7 +544,8 @@ def update_users(
         base_args[0] = new_loan_id
         base_args[2] = (
             f'This loan was copied from loan {loan_id}. '
-            + 'The users were changed during this operation.'
+            + 'The users were changed during this operation. Reason: '
+            + new_users.reason
         )
         itgs.write_cursor.execute(
             *lbshared.queries.convert_numbered_args(
