@@ -10,7 +10,6 @@ from fastapi.responses import Response, JSONResponse
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 import lbshared.queries
 from pypika import Table, PostgreSQLQuery as Query, Parameter
-from pypika.functions import Now
 import lbshared.convert
 from datetime import datetime
 import sqlparse
@@ -505,8 +504,9 @@ def update_users(
             None
         ]
 
+        new_deleted_at = datetime.now()
         update_old_select_params = base_select_params.copy()
-        update_old_select_params[-1] = Now()
+        update_old_select_params[-1] = new_deleted_at
         update_old_args = base_args.copy()
         update_old_args[0] = loan_id
         update_old_args[2] = (
@@ -519,6 +519,12 @@ def update_users(
                 base_query.select(*update_old_select_params).get_sql(),
                 update_old_args
             )
+        )
+
+        itgs.write_cursor.execute(
+            Query.update(loans).set(loans.deleted_at, new_deleted_at)
+            .where(loans.id == Parameter('%s')).get_sql(),
+            (loan_id,)
         )
 
         creation_infos = Table('loan_creation_infos')
