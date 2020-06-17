@@ -377,7 +377,7 @@ def update_users(
             return Response(status_code=412)
 
         usrs = Table('users')
-
+        created_lender = False
         try:
             itgs.write_cursor.execute(
                 Query.into(usrs).columns(usrs.username)
@@ -385,7 +385,9 @@ def update_users(
                 .get_sql(),
                 (new_users.lender_name.lower(),)
             )
+            created_lender = True
         except UniqueViolation:
+            itgs.write_cursor.rollback()
             itgs.write_cursor.execute(
                 Query.from_(usrs).select(usrs.id)
                 .where(usrs.username == Parameter('%s'))
@@ -403,6 +405,23 @@ def update_users(
                 (new_users.borrower_name.lower(),)
             )
         except UniqueViolation:
+            itgs.write_cursor.rollback()
+            if created_lender:
+                itgs.write_cursor.execute(
+                    Query.into(usrs).columns(usrs.username)
+                    .insert(Parameter('%s')).returning(usrs.id)
+                    .get_sql(),
+                    (new_users.lender_name.lower(),)
+                )
+            else:
+                # Slight race condition
+                itgs.write_cursor.execute(
+                    Query.from_(usrs).select(usrs.id)
+                    .where(usrs.username == Parameter('%s'))
+                    .get_sql(),
+                    (new_users.lender_name.lower(),)
+                )
+            (lender_id,) = itgs.write_cursor.fetchone()
             itgs.write_cursor.execute(
                 Query.from_(usrs).select(usrs.id)
                 .where(usrs.username == Parameter('%s'))
