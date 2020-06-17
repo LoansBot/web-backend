@@ -27,7 +27,7 @@ router = APIRouter()
         200: {'description': 'Success'},
         401: {'description': 'Missing authentication'},
         403: {'description': 'Bad authentication'},
-        404: {'description': 'Loan not found'},
+        410: {'description': 'Loan not found'},
         412: {'description': 'Etag does not match If-Match header'},
         428: {'description': 'Missing the if-match header'}
     }
@@ -347,7 +347,7 @@ def update(
         },
         401: {'description': 'Missing authentication'},
         403: {'description': 'Bad authentication'},
-        404: {'description': 'Loan not found'},
+        410: {'description': 'Loan not found'},
         412: {'description': 'Etag does not match If-Match header'},
         428: {'description': 'Missing the if-match header'}
     }
@@ -531,6 +531,7 @@ def update_users(
                 base_args
             )
         )
+        itgs.write_conn.commit()
         return JSONResponse(
             status_code=200,
             content=edit_models.SingleLoanResponse(loan_id=new_loan_id).dict()
@@ -547,7 +548,7 @@ def update_users(
         },
         401: {'description': 'Missing authentication'},
         403: {'description': 'Bad authentication'},
-        404: {'description': 'Loan not found'},
+        410: {'description': 'Loan not found'},
         412: {'description': 'Etag does not match If-Match header'},
         428: {'description': 'Missing the if-match header'}
     }
