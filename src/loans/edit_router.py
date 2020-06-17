@@ -10,9 +10,11 @@ from fastapi.responses import Response, JSONResponse
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 import lbshared.queries
 from pypika import Table, PostgreSQLQuery as Query, Parameter
+from pypika.functions import Now
 import lbshared.convert
 from datetime import datetime
 import sqlparse
+from psycopg2 import IntegrityError
 
 
 router = APIRouter()
@@ -356,7 +358,183 @@ def update_users(
     """Allows modifying the users on a loan. Must provide an If-Match header
     which is the etag of the loan being modified.
     """
-    pass
+    if if_match is None:
+        return Response(status_code=428)
+
+    with LazyItgs(no_read_only=True) as itgs:
+        has_perm, user_id = users.helper.check_permissions_from_header(
+            itgs, authorization, (helper.EDIT_LOANS_PERMISSION,)
+        )
+
+        if not has_perm:
+            return Response(status_code=403)
+
+        etag = helper.calculate_etag(itgs, loan_id)
+        if etag is None:
+            return Response(status_code=410)
+
+        if etag != if_match:
+            return Response(status_code=412)
+
+        usrs = Table('users')
+
+        try:
+            itgs.write_cursor.execute(
+                Query.into(usrs).columns(usrs.username)
+                .insert(Parameter('%s')).returning(usrs.id)
+                .get_sql(),
+                (new_users.lender_name.lower(),)
+            )
+        except IntegrityError as e:
+            if e.pgcode != 23505:  # UniqueViolation
+                raise
+            itgs.write_cursor.execute(
+                Query.from_(usrs).select(usrs.id)
+                .where(usrs.username == Parameter('%s'))
+                .get_sql(),
+                (new_users.lender_name.lower(),)
+            )
+
+        (lender_id,) = itgs.write_cursor.fetchone()
+
+        try:
+            itgs.write_cursor.execute(
+                Query.into(usrs).columns(usrs.username)
+                .insert(Parameter('%s')).returning(usrs.id)
+                .get_sql(),
+                (new_users.borrower_name.lower(),)
+            )
+        except IntegrityError as e:
+            if e.pgcode != 23505:  # UniqueViolation
+                raise
+            itgs.write_cursor.execute(
+                Query.from_(usrs).select(usrs.id)
+                .where(usrs.username == Parameter('%s'))
+                .get_sql(),
+                (new_users.borrower_name.lower(),)
+            )
+
+        (borrower_id,) = itgs.write_cursor.fetchone()
+
+        loans = Table('loans')
+        itgs.write_cursor.execute(
+            Query.into(loans).columns(
+                loans.lender_id,
+                loans.borrower_id,
+                loans.principal_id,
+                loans.principal_repayment_id,
+                loans.created_at,
+                loans.repaid_at,
+                loans.unpaid_at,
+                loans.deleted_at
+            )
+            .from_(loans)
+            .select(
+                Parameter('%s'),
+                Parameter('%s'),
+                loans.principal_id,
+                loans.principal_repayment_id,
+                loans.created_at,
+                loans.repaid_at,
+                loans.unpaid_at,
+                loans.deleted_at
+            )
+            .where(loans.id == Parameter('%s'))
+            .returning(loans.id)
+            .get_sql(),
+            (lender_id, borrower_id, loan_id)
+        )
+        (new_loan_id,) = itgs.write_cursor.fetchone()
+
+        admin_events = Table('loan_admin_events')
+        base_query = (
+            Query.into(admin_events).columns(
+                admin_events.loan_id,
+                admin_events.admin_id,
+                admin_events.reason,
+                admin_events.old_principal_id,
+                admin_events.new_principal_id,
+                admin_events.old_principal_repayment_id,
+                admin_events.new_principal_repayment_id,
+                admin_events.old_created_at,
+                admin_events.new_created_at,
+                admin_events.old_repaid_at,
+                admin_events.new_repaid_at,
+                admin_events.old_unpaid_at,
+                admin_events.new_unpaid_at,
+                admin_events.old_deleted_at,
+                admin_events.new_deleted_at
+            ).from_(loans)
+            .where(loans.id == Parameter('$1'))
+        )
+        base_select_params = [
+            loans.id,
+            Parameter('$2'),
+            Parameter('$3'),
+            loans.principal_id,
+            loans.principal_id,
+            loans.principal_repayment_id,
+            loans.principal_repayment_id,
+            loans.created_at,
+            loans.created_at,
+            loans.repaid_at,
+            loans.repaid_at,
+            loans.unpaid_at,
+            loans.unpaid_at,
+            loans.deleted_at,
+            loans.deleted_at
+        ]
+        base_args = [
+            None,
+            user_id,
+            None
+        ]
+
+        update_old_select_params = base_select_params.copy()
+        update_old_select_params[-1] = Now()
+        update_old_args = base_args.copy()
+        update_old_args[0] = loan_id
+        update_old_args[2] = (
+            'This loan had the users changed. '
+            + f'The new loan id is {new_loan_id}. '
+            + 'Do not modify this loan further.'
+        )
+        itgs.write_cursor.execute(
+            *lbshared.queries.convert_numbered_args(
+                base_query.select(*update_old_select_params).get_sql(),
+                update_old_args
+            )
+        )
+
+        creation_infos = Table('loan_creation_infos')
+        itgs.write_cursor.execute(
+            Query.into(creation_infos).columns(
+                creation_infos.loan_id,
+                creation_infos.type,
+                creation_infos.mod_user_id
+            ).insert(
+                Parameter('%s'),
+                Parameter('%s'),
+                Parameter('%s')
+            ).get_sql(),
+            (new_loan_id, 1, user_id)
+        )
+
+        base_args[0] = new_loan_id
+        base_args[2] = (
+            f'This loan was copied from loan {loan_id}. '
+            + 'The users were changed during this operation.'
+        )
+        itgs.write_cursor.execute(
+            *lbshared.queries.convert_numbered_args(
+                base_query.select(*base_select_params).get_sql(),
+                base_args
+            )
+        )
+        return JSONResponse(
+            status_code=200,
+            content=edit_models.SingleLoanResponse(loan_id=new_loan_id).dict()
+        )
 
 
 @router.put(

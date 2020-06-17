@@ -1,6 +1,10 @@
 """Contains the response and request models for editing loans"""
 from pydantic import BaseModel, validator
 import time
+import re
+
+
+VALID_USERNAME_REGEX = r'\A[A-Za-z0-9_\-]{3-20}\Z'
 
 
 class LoanBasicFields(BaseModel):
@@ -57,6 +61,12 @@ class ChangeLoanUsers(BaseModel):
         if len(stripped) < 5:
             raise ValueError('must be at least 5 characters stripped')
         return stripped
+
+    @validator('lender_name', 'borrower_name')
+    def lender_name_must_be_stripped(cls, v):
+        if not re.match(VALID_USERNAME_REGEX, v):
+            raise ValueError(f'must match regex {VALID_USERNAME_REGEX}')
+        return v
 
 
 class ChangeLoanCurrency(BaseModel):
