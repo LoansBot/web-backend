@@ -14,7 +14,7 @@ from pypika.functions import Now
 import lbshared.convert
 from datetime import datetime
 import sqlparse
-from psycopg2 import IntegrityError
+from psycopg2.errors import UniqueViolation
 
 
 router = APIRouter()
@@ -385,9 +385,7 @@ def update_users(
                 .get_sql(),
                 (new_users.lender_name.lower(),)
             )
-        except IntegrityError as e:
-            if e.pgcode != 23505:  # UniqueViolation
-                raise
+        except UniqueViolation:
             itgs.write_cursor.execute(
                 Query.from_(usrs).select(usrs.id)
                 .where(usrs.username == Parameter('%s'))
@@ -404,9 +402,7 @@ def update_users(
                 .get_sql(),
                 (new_users.borrower_name.lower(),)
             )
-        except IntegrityError as e:
-            if e.pgcode != 23505:  # UniqueViolation
-                raise
+        except UniqueViolation:
             itgs.write_cursor.execute(
                 Query.from_(usrs).select(usrs.id)
                 .where(usrs.username == Parameter('%s'))
