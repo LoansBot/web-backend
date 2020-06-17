@@ -387,7 +387,7 @@ def update_users(
             )
             created_lender = True
         except UniqueViolation:
-            itgs.write_cursor.rollback()
+            itgs.write_conn.rollback()
             itgs.write_cursor.execute(
                 Query.from_(usrs).select(usrs.id)
                 .where(usrs.username == Parameter('%s'))
@@ -405,7 +405,7 @@ def update_users(
                 (new_users.borrower_name.lower(),)
             )
         except UniqueViolation:
-            itgs.write_cursor.rollback()
+            itgs.write_conn.rollback()
             if created_lender:
                 itgs.write_cursor.execute(
                     Query.into(usrs).columns(usrs.username)
