@@ -581,4 +581,203 @@ def update_currency(
     """Allows modifying the currency on a loan. Must provide an If-Match header
     which is the etag of the loan being modified.
     """
-    pass
+    if if_match is None:
+        return Response(status_code=428)
+
+    with LazyItgs(no_read_only=True) as itgs:
+        has_perm, user_id = users.helper.check_permissions_from_header(
+            itgs, authorization, (helper.EDIT_LOANS_PERMISSION,)
+        )
+
+        if not has_perm:
+            return Response(status_code=403)
+
+        etag = helper.calculate_etag(itgs, loan_id)
+        if etag is None:
+            return Response(status_code=410)
+
+        if etag != if_match:
+            return Response(status_code=412)
+
+        loans = Table('loans')
+        moneys = Table('moneys')
+        principals = moneys.as_('principals')
+        principal_repayments = moneys.as_('principal_repayments')
+        currencies = Table('currencies')
+
+        itgs.write_cursor.execute(
+            Query.from_(currencies).select(currencies.id)
+            .where(currencies.code == Parameter('%s'))
+            .get_sql(),
+            (new_currency.currency_code.upper(),)
+        )
+        row = itgs.write_cursor.fetchone()
+        if row is None:
+            return JSONResponse(
+                status_code=422,
+                content={
+                    'detail': [
+                        {
+                            'loc': ['currency_code'],
+                            'msg': 'Must be a recognized currency code',
+                            'type': 'value_error'
+                        }
+                    ]
+                }
+            )
+        (currency_id,) = row
+
+        rate_usd_to_currency = lbshared.convert.convert(
+            itgs, 'USD', new_currency.currency_code.upper())
+
+        principal_usd = round(new_currency.principal_minor / rate_usd_to_currency)
+        principal_repayment_usd = round(
+            new_currency.principal_repayment_minor / rate_usd_to_currency)
+
+        itgs.write_cursor.execute(
+            Query.into(principals).columns(
+                principals.currency_id,
+                principals.amount,
+                principals.amount_usd_cents
+            ).insert(*[Parameter('%s') for _ in range(3)])
+            .returning(principals.id)
+            .get_sql(),
+            (
+                currency_id,
+                new_currency.principal_minor,
+                principal_usd
+            )
+        )
+        (new_principal_id,) = itgs.write_cursor.fetchone()
+
+        itgs.write_cursor.execute(
+            Query.into(principal_repayments).columns(
+                principal_repayments.currency_id,
+                principal_repayments.amount,
+                principal_repayments.amount_usd_cents
+            ).insert(*[Parameter('%s') for _ in range(3)])
+            .returning(principal_repayments.id)
+            .get_sql(),
+            (
+                currency_id,
+                new_currency.principal_repayment_minor,
+                principal_repayment_usd
+            )
+        )
+        (new_principal_repayment_id,) = itgs.write_cursor.fetchone()
+
+        itgs.write_cursor.execute(
+            Query.into(loans).columns(
+                loans.lender_id,
+                loans.borrower_id,
+                loans.principal_id,
+                loans.principal_repayment_id,
+                loans.created_at,
+                loans.repaid_at,
+                loans.unpaid_at,
+                loans.deleted_at
+            ).from_(loans).select(
+                loans.lender_id,
+                loans.borrower_id,
+                Parameter('%s'),
+                Parameter('%s'),
+                loans.created_at,
+                loans.repaid_at,
+                loans.unpaid_at,
+                loans.deleted_at
+            ).where(loans.id == Parameter('%s'))
+            .get_sql(),
+            (
+                new_principal_id,
+                new_principal_repayment_id,
+                loan_id
+            )
+        )
+        (new_loan_id,) = itgs.write_cursor.fetchone()
+
+        admin_events = Table('loan_admin_events')
+        query = (
+            Query.into(admin_events).columns(
+                admin_events.loan_id,
+                admin_events.admin_id,
+                admin_events.reason,
+                admin_events.old_principal_id,
+                admin_events.new_principal_id,
+                admin_events.old_principal_repayment_id,
+                admin_events.new_principal_repayment_id,
+                admin_events.old_created_at,
+                admin_events.new_created_at,
+                admin_events.old_repaid_at,
+                admin_events.new_repaid_at,
+                admin_events.old_unpaid_at,
+                admin_events.new_unpaid_at,
+                admin_events.old_deleted_at,
+                admin_events.new_deleted_at
+            ).from_(loans).select(
+                loans.id,
+                user_id,
+                Parameter('%s'),
+                loans.principal_id,
+                loans.principal_id,
+                loans.principal_repayment_id,
+                loans.principal_repayment_id,
+                loans.created_at,
+                loans.created_at,
+                loans.repaid_at,
+                loans.repaid_at,
+                loans.unpaid_at,
+                loans.unpaid_at,
+                loans.deleted_at
+            ).where(loans.id == Parameter('%s'))
+        )
+
+        new_deleted_at = datetime.now()
+        itgs.write_cursor.execute(
+            query.select(Parameter('%s')).get_sql(),
+            (
+                f'This loan was copied to loan {new_loan_id} then deleted in '
+                + f'order to change the currency to {new_currency.currency_code.upper()}. '
+                + 'Do not modify this loan further.',
+                new_deleted_at,
+                loan_id
+            )
+        )
+        itgs.write_cursor.execute(
+            Query.update(loans).set(loans.deleted_at, Parameter('%s'))
+            .where(loans.id == Parameter('%s')).get_sql(),
+            (
+                new_deleted_at,
+                loan_id
+            )
+        )
+
+        creation_infos = Table('loan_creation_infos')
+        itgs.write_cursor.execute(
+            Query.into(creation_infos).columns(
+                creation_infos.loan_id,
+                creation_infos.type,
+                creation_infos.mod_user_id
+            ).insert(*[Parameter('%s') for _ in range(3)])
+            .get_sql(),
+            (
+                new_loan_id,
+                1,
+                user_id
+            )
+        )
+
+        itgs.write_cursor.execute(
+            query.select(loans.deleted_at).get_sql(),
+            (
+                f'This loan was copied from {loan_id} with the currency changed to '
+                + f'{new_currency.currency_code.upper()}. Reason: {new_currency.reason}',
+                new_loan_id
+            )
+        )
+        itgs.write_conn.commit()
+        return JSONResponse(
+            status_code=200,
+            content=edit_models.SingleLoanResponse(
+                loan_id=new_loan_id
+            ).dict()
+        )
