@@ -601,8 +601,6 @@ def update_currency(
 
         loans = Table('loans')
         moneys = Table('moneys')
-        principals = moneys.as_('principals')
-        principal_repayments = moneys.as_('principal_repayments')
         currencies = Table('currencies')
 
         itgs.write_cursor.execute(
@@ -635,12 +633,12 @@ def update_currency(
             new_currency.principal_repayment_minor / rate_usd_to_currency)
 
         itgs.write_cursor.execute(
-            Query.into(principals).columns(
-                principals.currency_id,
-                principals.amount,
-                principals.amount_usd_cents
+            Query.into(moneys).columns(
+                moneys.currency_id,
+                moneys.amount,
+                moneys.amount_usd_cents
             ).insert(*[Parameter('%s') for _ in range(3)])
-            .returning(principals.id)
+            .returning(moneys.id)
             .get_sql(),
             (
                 currency_id,
@@ -651,12 +649,12 @@ def update_currency(
         (new_principal_id,) = itgs.write_cursor.fetchone()
 
         itgs.write_cursor.execute(
-            Query.into(principal_repayments).columns(
-                principal_repayments.currency_id,
-                principal_repayments.amount,
-                principal_repayments.amount_usd_cents
+            Query.into(moneys).columns(
+                moneys.currency_id,
+                moneys.amount,
+                moneys.amount_usd_cents
             ).insert(*[Parameter('%s') for _ in range(3)])
-            .returning(principal_repayments.id)
+            .returning(moneys.id)
             .get_sql(),
             (
                 currency_id,
