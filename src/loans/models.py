@@ -43,7 +43,7 @@ class AdminLoanEvent(LoanEvent):
 
 class CreationLoanEvent(LoanEvent):
     creation_type: int
-    creation_permalink: str
+    creation_permalink: str = None
 
 
 class UnpaidLoanEvent(LoanEvent):

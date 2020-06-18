@@ -5,6 +5,23 @@ from starlette.responses import PlainTextResponse, Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 ALL_METHODS = ("DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT")
+ALWAYS_ALLOWED_HEADERS = [
+    'cache-control',
+    'content-type',
+    'etag',
+    'if-match',
+    'if-none-match'
+]
+ALWAYS_EXPOSED_HEADERS = [
+    'cache-control',
+    'content-language',
+    'content-length',
+    'content-type',
+    'expires',
+    'last-modified',
+    'pragma',
+    'etag'
+]
 
 
 class BlanketCORSMiddleware:
@@ -40,7 +57,12 @@ class BlanketCORSMiddleware:
             'Access-Control-Max-Age': '600',
             'Access-Control-Allow-Origin': requested_origin
         }
-        headers["Access-Control-Allow-Headers"] = requested_headers
+        headers["Access-Control-Allow-Headers"] = (
+            ','.join(list(frozenset([
+                i.lower() for i in (ALWAYS_ALLOWED_HEADERS + requested_headers.split(','))
+                if i
+            ])))
+        )
 
         return PlainTextResponse("OK", status_code=200, headers=headers)
 
@@ -66,4 +88,5 @@ class BlanketCORSMiddleware:
         message.setdefault("headers", [])
         headers = MutableHeaders(scope=message)
         headers['Access-Control-Allow-Origin'] = origin
+        headers['Access-Control-Expose-Headers'] = ','.join(ALWAYS_EXPOSED_HEADERS)
         await send(message)

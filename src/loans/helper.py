@@ -63,6 +63,9 @@ GLOBAL_RATELIMITS = lbshared.ratelimits.Settings(
 )
 """Global ratelimit settings"""
 
+EDIT_LOANS_PERMISSION = 'edit_loans'
+"""The name of the permission that gives a user the ability to modify loans."""
+
 
 def calculate_etag(itgs, loan_id) -> str:
     """Calculates a valid etag for the loan with the given id. If no such loan
