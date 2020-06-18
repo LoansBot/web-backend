@@ -684,6 +684,7 @@ def update_currency(
                 loans.unpaid_at,
                 loans.deleted_at
             ).where(loans.id == Parameter('%s'))
+            .returning(loans.id)
             .get_sql(),
             (
                 new_principal_id,
