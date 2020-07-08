@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 sudo yum -y install make glibc-devel gcc patch perl-core zlib-devel postgresql-devel
+sudo yum -y install libffi libffi-devel
 if [ ! -f /usr/local/src/openssl-1.1.1g.tar.gz ]; then
     # We need openssl >= 1.1 for scrypt, and we need to build python with it
     # available. We also update python here to latest since we're building
