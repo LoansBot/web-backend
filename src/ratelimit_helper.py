@@ -1,9 +1,7 @@
 """Contains helpful functions for ratelimiting API calls. Any API call which
 is not moderator-only should be ratelimited in some fashion.
 """
-from lblogging import Level
 import lbshared.ratelimits
-from pydantic.error_wrappers import ValidationError
 from users.settings_helper import get_settings
 
 

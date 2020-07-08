@@ -9,7 +9,6 @@ for a users ratelimit to be frozen. This is because our assumption is that
 ratelimit changes will _generally_ be beneficial (i.e., reducing restrictions),
 so freezing as a default probably won't be beneficial.
 """
-from datetime import datetime
 from pydantic import BaseModel
 import time
 
