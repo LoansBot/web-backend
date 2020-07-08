@@ -48,6 +48,30 @@ class UserShowSelfResponse(BaseModel):
     username: str
 
 
+class UserShowResponse(BaseModel):
+    """The response for showing a particular user by id"""
+    username: str
+
+
 class UserPermissions(BaseModel):
     """The response that's provided for a users permissions."""
     permissions: typing.List[str]
+
+
+class UserLookupResponse(BaseModel):
+    """The success response to looking up a user by their username
+
+    Attributes:
+    - `id (int)`: The users id
+    """
+    id: int
+
+
+class UserSuggestResponse(BaseModel):
+    """The success response to searching for users with a partial
+    match.
+
+    Attributes:
+    - `suggestions (list[str])`: The list of usernames we suggest
+    """
+    suggestions: typing.List[str]

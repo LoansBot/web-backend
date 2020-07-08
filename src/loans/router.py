@@ -144,10 +144,6 @@ def index(
         user_id, _, perms = users.helper.get_permissions_from_header(
             itgs, authorization, (helper.DELETED_LOANS_PERM, *helper.RATELIMIT_PERMISSIONS)
         )
-        if perms:
-            perms = tuple(perms)
-        else:
-            perms = tuple()
 
         if not helper.check_ratelimit(itgs, user_id, perms, 1 if dry_run else request_cost):
             return Response(
@@ -330,10 +326,6 @@ def show(loan_id: int, authorization: str = Header(None)):
         user_id, _, perms = users.helper.get_permissions_from_header(
             itgs, authorization, (helper.DELETED_LOANS_PERM, *helper.RATELIMIT_PERMISSIONS)
         )
-        if perms:
-            perms = tuple(perms)
-        else:
-            perms = tuple()
 
         if not helper.check_ratelimit(itgs, user_id, perms, 1):
             return Response(status_code=429)
@@ -371,10 +363,6 @@ def show_detailed(loan_id: int, authorization: str = Header(None)):
                 *helper.RATELIMIT_PERMISSIONS
             )
         )
-        if perms:
-            perms = tuple(perms)
-        else:
-            perms = tuple()
 
         if not helper.check_ratelimit(itgs, user_id, perms, 5):
             return Response(status_code=429)

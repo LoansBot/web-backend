@@ -3,7 +3,8 @@ from . import models
 import security
 import typing
 from pypika import PostgreSQLQuery as Query, Table, Parameter, functions as ppfns
-from hashlib import pbkdf2_hmac
+from hashlib import pbkdf2_hmac, scrypt
+from hmac import compare_digest
 from datetime import datetime, timedelta
 import secrets
 from base64 import b64encode
@@ -23,6 +24,7 @@ def get_valid_passwd_auth(
     auths = Table('password_authentications')
     itgs.read_cursor.execute(
         Query.from_(users).select(users.id)
+        .where(auths.deleted.eq(False))
         .where(users.username == Parameter('%s'))
         .limit(1).get_sql(),
         (auth.username.lower(),)
@@ -94,21 +96,39 @@ def get_valid_passwd_auth(
             )
             return None
 
-    provided_hash = b64encode(
-        pbkdf2_hmac(
-            hash_name,
-            auth.password.encode('utf-8'),
-            salt.encode('utf-8'),
-            iters
-        )
-    ).decode('ascii')
-    if hash_ != provided_hash:
+    if hash_name.startswith('scrypt'):
+        _, block_size, dklen = hash_name.split('-')
+        block_size = int(block_size)
+        dklen = int(dklen)
+
+        provided_hash = b64encode(
+            scrypt(
+                auth.password.encode('utf-8'),
+                salt=salt.encode('utf-8'),
+                n=iters,
+                r=block_size,
+                maxmem=128 * iters * block_size + 1024 * 64,
+                dklen=dklen
+            )
+        ).decode('ascii')
+    else:
+        provided_hash = b64encode(
+            pbkdf2_hmac(
+                hash_name,
+                auth.password.encode('utf-8'),
+                salt.encode('utf-8'),
+                iters
+            )
+        ).decode('ascii')
+
+    if not compare_digest(hash_.encode('ascii'), provided_hash.encode('ascii')):
         itgs.logger.print(
             Level.TRACE,
             'User {} tried to login but provided the wrong password',
             auth.username
         )
         return None
+
     itgs.logger.print(
         Level.TRACE,
         'User {} successfully logged in',
@@ -191,13 +211,17 @@ def create_token_from_passauth(
     itgs.write_cursor.execute(
         Query
         .into(authtokens)
-        .columns(authtokens.user_id, authtokens.token, authtokens.expires_at)
+        .columns(
+            authtokens.user_id, authtokens.token, authtokens.expires_at,
+            authtokens.source_type, authtokens.source_id
+        )
         .from_(pauths)
-        .select(pauths.user_id, Parameter('%s'), Parameter('%s'))
+        .select(pauths.user_id, *[Parameter('%s') for _ in range(4)])
+        .where(pauths.deleted.eq(False))
         .where(pauths.id == Parameter('%s'))
         .returning(authtokens.id, authtokens.user_id)
         .get_sql(),
-        (token, expires_at, passauth_id)
+        (token, expires_at, passauth_id, 'password_authentication', passauth_id)
     )
     (authtoken_id, user_id) = itgs.write_cursor.fetchone()
     itgs.write_cursor.execute(
@@ -426,12 +450,12 @@ def get_permissions_from_header(itgs, authorization, permissions):
 
     authtoken = get_authtoken_from_header(authorization)
     if authtoken is None:
-        return (None, False, None)
+        return (None, False, [])
     info = get_auth_info_from_token_auth(
         itgs, models.TokenAuthentication(token=authtoken)
     )
     if info is None:
-        return (None, True, None)
+        return (None, True, [])
     auth_id, user_id = info[:2]
     if not permissions:
         return (user_id, True, [])

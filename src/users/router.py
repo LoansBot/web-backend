@@ -3,10 +3,12 @@ from fastapi.responses import Response, JSONResponse
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 from . import helper
 from . import models
+from users.settings_router import router as settings_router
 import models as main_models
 import security
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from datetime import timedelta
+import ratelimit_helper
 import os
 import uuid
 import time
@@ -14,6 +16,7 @@ import json
 
 
 router = APIRouter()
+router.include_router(settings_router)
 
 
 @router.post(
@@ -70,6 +73,143 @@ def logout(auth: models.TokenAuthentication):
         )
         itgs.write_conn.commit()
         return Response(status_code=200)
+
+
+@router.get(
+    '/{req_user_id}',
+    tags=['users'],
+    responses={
+        200: {'description': 'Success', 'model': models.UserShowResponse},
+        404: {'description': 'No such user exists or you cannot see them.'}
+    }
+)
+def show(req_user_id: int, authorization=Header(None)):
+    request_cost = 1
+
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
+            *ratelimit_helper.RATELIMIT_PERMISSIONS
+        ))
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        users = Table('users')
+        itgs.read_cursor.execute(
+            Query.from_(users).select(users.username)
+            .where(users.id == Parameter('%s')).get_sql(),
+            (req_user_id,)
+        )
+        row = itgs.read_cursor.fetchone()
+        if row is None:
+            return Response(status_code=404, headers=headers)
+
+        headers['Cache-Control'] = 'public, max-age=604800, immutable'
+        return JSONResponse(
+            status_code=200,
+            content=models.UserShowResponse(username=row[0]).dict(),
+            headers=headers
+        )
+
+
+@router.get(
+    '/lookup',
+    tags=['users'],
+    responses={
+        200: {'description': 'Success', 'model': models.UserLookupResponse},
+        404: {'description': 'No such user exists or you cannot see them'}
+    }
+)
+def lookup(q: str, authorization=Header(None)):
+    """Allows looking up a user id by a username. q is the username to lookup"""
+    request_cost = 1
+
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
+            *ratelimit_helper.RATELIMIT_PERMISSIONS
+        ))
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        users = Table('users')
+        itgs.read_cursor.execute(
+            Query.from_(users).select(users.id)
+            .where(users.username == Parameter('%s')).get_sql(),
+            (q.lower(),)
+        )
+        row = itgs.read_cursor.fetchone()
+        if row is None:
+            return Response(status_code=404, headers=headers)
+
+        headers['Cache-Control'] = 'public, max-age=604800, immutable'
+        return JSONResponse(
+            status_code=200,
+            content=models.UserLookupResponse(id=row[0]).dict(),
+            headers=headers
+        )
+
+
+@router.get(
+    '/suggest',
+    responses={
+        200: {'description': 'Success', 'model': models.UserSuggestResponse},
+        204: {'description': 'Success; no suggestions'}
+    }
+)
+def suggest(q: str, limit: int = 3, authorization=Header(None)):
+    """Suggest some usernames that partially match the query. q is the partial
+    username string"""
+    if limit <= 0:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['limit'],
+                    'msg': 'Must be positive',
+                    'type': 'range_error'
+                }
+            }
+        )
+
+    # This is actually moderately expensive since we don't use the correct
+    # index for this, but we could switch to a real searching technique to
+    # speed it up if this endpoint is problematic, so we'll under-charge here.
+    request_cost = 10 + limit
+
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
+            *ratelimit_helper.RATELIMIT_PERMISSIONS
+        ))
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        users = Table('users')
+        itgs.read_cursor.execute(
+            Query.from_(users).select(users.id)
+            .where(users.username.like(Parameter('%s')))
+            .limit(limit)
+            .get_sql(),
+            ('%' + q.lower() + '%',)
+        )
+        row = itgs.read_cursor.fetchone()
+        if row is None:
+            return Response(status_code=204)
+        result = []
+        while row is not None:
+            result.append(row)
+            row = itgs.read_cursor.fetchone()
+
+        headers['Cache-Control'] = 'public, max-age=86400, stale-while-revalidate=518400'
+        return JSONResponse(
+            status_code=200,
+            content=models.UserSuggestResponse(suggestions=result).dict(),
+            headers=headers
+        )
 
 
 @router.get(
