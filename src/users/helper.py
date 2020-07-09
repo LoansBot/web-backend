@@ -24,7 +24,6 @@ def get_valid_passwd_auth(
     auths = Table('password_authentications')
     itgs.read_cursor.execute(
         Query.from_(users).select(users.id)
-        .where(auths.deleted.eq(False))
         .where(users.username == Parameter('%s'))
         .limit(1).get_sql(),
         (auth.username.lower(),)
@@ -42,7 +41,7 @@ def get_valid_passwd_auth(
     query = Query.from_(auths).select(
         auths.id, auths.user_id, auths.human, auths.hash_name, auths.hash,
         auths.salt, auths.iterations
-    )
+    ).where(auths.deleted.eq(False))
     if auth.password_authentication_id is not None:
         query = query.where(auths.id == auth.password_authentication_id)
     else:
