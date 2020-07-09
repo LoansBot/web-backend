@@ -48,7 +48,7 @@ class ChangePasswordParams(BaseModel):
         return stripped
 
 
-class AuthMethod:
+class AuthMethod(BaseModel):
     main: bool
     deleted: bool
     active_grants: int
