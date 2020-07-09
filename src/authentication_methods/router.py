@@ -21,7 +21,7 @@ router = APIRouter()
     '/{id}/permissions',
     tags=['authentication_methods', 'permissions'],
     responses={
-        200: {'description': 'Success', 'model': models.Permission},
+        200: {'description': 'Success', 'model': models.AuthMethodPermissions},
         401: {'description': 'Authorization header missing'},
         403: {'description': 'Authorization header provided but invalid'},
         404: {'description': 'Unknown authentication method or not owned by you.'}
