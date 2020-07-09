@@ -18,7 +18,7 @@ router = APIRouter()
 
 @router.get(
     '/{req_user_id}/authentication_methods/?',
-    response={
+    responses={
         200: {'description': 'Success', 'model': settings_models.UserAuthMethodsList},
         401: {'description': 'Authorization header missing'},
         403: {'description': 'Authorization header invalid or insufficient'},
@@ -81,7 +81,7 @@ def show_authentication_methods(req_user_id: int, authorization=Header(None)):
 
 @router.get(
     '/{req_user_id}/settings/history',
-    response={
+    responses={
         200: {'description': 'Success', 'model': settings_models.UserSettingsHistory},
         401: {'description': 'Authorization header missing'},
         403: {'description': 'Authorization header invalid or insufficient'},
@@ -176,7 +176,7 @@ def index_user_history(
 
 @router.get(
     '/{req_user_id}/settings/history/{event_id}',
-    response={
+    responses={
         200: {'description': 'Success', 'model': settings_models.UserSettingsEvent},
         401: {'description': 'Authorization header missing'},
         403: {'description': 'Authorization header invalid or insufficient'},
@@ -255,7 +255,7 @@ def show_user_history_event(req_user_id: int, event_id: int, authorization=Heade
 
 @router.get(
     '/{req_user_id}/settings/{setting_name}',
-    response={
+    responses={
         200: {'description': 'Success', 'model': settings_models.UserSetting},
         401: {'description': 'Authorization header missing'},
         403: {'description': 'Authorization header invalid or insufficient'},
@@ -372,7 +372,7 @@ def show_setting(
 
 @router.put(
     '/{req_user_id}/settings/non-req-response-opt-out',
-    response={
+    responses={
         200: {'description': 'Successfully updated.'},
         401: {'description': 'Authorization header missing.'},
         403: {'description': 'Authorization header invalid or insufficient.'},
@@ -428,7 +428,7 @@ def update_non_req_response_opt_out(
 
 @router.put(
     '/{req_user_id}/settings/borrower-req-pm-opt-out',
-    response={
+    responses={
         200: {'description': 'Successfully updated.'},
         401: {'description': 'Authorization header missing.'},
         403: {'description': 'Authorization header invalid or insufficient.'},
@@ -484,7 +484,7 @@ def update_borrower_req_pm_opt_out(
 
 @router.put(
     '/{req_user_id}/settings/ratelimit',
-    response={
+    responses={
         200: {'description': 'Successfully updated.'},
         401: {'description': 'Authorization header missing.'},
         403: {'description': 'Authorization header invalid or insufficient.'},
