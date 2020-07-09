@@ -24,7 +24,7 @@ app.include_router(logs.router.router, prefix='/logs')
 app.include_router(responses.router.router, prefix='/responses')
 app.include_router(loans.router.router, prefix='/loans')
 app.include_router(permissions.router.router, prefix='/permissions')
-app.include_router(authentication_methods.router, prefix='/authentication_methods')
+app.include_router(authentication_methods.router.router, prefix='/authentication_methods')
 
 
 @app.exception_handler(Exception)
