@@ -77,10 +77,10 @@ def index_permissions(id: int, authorization=Header(None)):
         itgs.read_cursor.execute(query.get_sql(), args)
 
         result = []
-        row = itgs.read_cursor.fetch_one()
+        row = itgs.read_cursor.fetchone()
         while row is not None:
             result.append(row[0])
-            row = itgs.read_cursor.fetch_one()
+            row = itgs.read_cursor.fetchone()
 
         return JSONResponse(
             status_code=200,
