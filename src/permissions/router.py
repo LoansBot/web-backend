@@ -24,7 +24,7 @@ def show(self, permission: str, authorization=Header(None)):
 
     with LazyItgs() as itgs:
         user_id, provided, perms = users.helper.get_permissions_from_header(
-            itgs, authorization, (*ratelimit_helper.RATELIMIT_PERMISSIONS)
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
         )
 
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
@@ -76,7 +76,7 @@ def index(self, authorization=Header(None)):
 
     with LazyItgs() as itgs:
         user_id, provided, perms = users.helper.get_permissions_from_header(
-            itgs, authorization, (*ratelimit_helper.RATELIMIT_PERMISSIONS)
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
         )
 
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):

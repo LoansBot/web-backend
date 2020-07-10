@@ -88,9 +88,9 @@ def show(req_user_id: int, authorization=Header(None)):
 
     headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
-        user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
-            *ratelimit_helper.RATELIMIT_PERMISSIONS
-        ))
+        user_id, _, perms = helper.get_permissions_from_header(
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
+        )
 
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
             return Response(status_code=429, headers=headers)
@@ -127,9 +127,8 @@ def lookup(q: str, authorization=Header(None)):
 
     headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
-        user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
-            *ratelimit_helper.RATELIMIT_PERMISSIONS
-        ))
+        user_id, _, perms = helper.get_permissions_from_header(
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS)
 
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
             return Response(status_code=429, headers=headers)
@@ -181,9 +180,8 @@ def suggest(q: str, limit: int = 3, authorization=Header(None)):
 
     headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
-        user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
-            *ratelimit_helper.RATELIMIT_PERMISSIONS
-        ))
+        user_id, _, perms = helper.get_permissions_from_header(
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS)
 
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
             return Response(status_code=429, headers=headers)
