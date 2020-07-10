@@ -103,7 +103,7 @@ def index(authorization=Header(None)):
             result.append(row[0])
             row = itgs.read_cursor.fetchone()
 
-        return Response(
+        return JSONResponse(
             status_code=200,
             content=models.PermissionsList(permissions=result).dict(),
             headers={
