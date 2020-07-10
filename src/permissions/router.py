@@ -19,7 +19,7 @@ router = APIRouter()
         404: {'description': 'Unknown permission'}
     }
 )
-def show(self, permission: str, authorization=Header(None)):
+def show(permission: str, authorization=Header(None)):
     request_cost = 1
 
     with LazyItgs() as itgs:
@@ -71,7 +71,7 @@ def show(self, permission: str, authorization=Header(None)):
         403: {'description': 'Authorization provided but invalid'}
     }
 )
-def index(self, authorization=Header(None)):
+def index(authorization=Header(None)):
     request_cost = 25
 
     with LazyItgs() as itgs:
