@@ -149,7 +149,8 @@ def index(
             )
         )
 
-        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, 1 if dry_run else request_cost):
+        real_req_cost = 1 if dry_run else request_cost
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, real_req_cost):
             return Response(
                 status_code=429,
                 headers={'x-request-cost': str(request_cost)}

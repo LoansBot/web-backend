@@ -285,7 +285,7 @@ def show_setting(
         return Response(status_code=404)
 
     request_cost = 1
-    headers = {'x-request-cost': request_cost}
+    headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
             settings_helper.VIEW_OTHERS_SETTINGS_PERMISSION,
@@ -387,7 +387,7 @@ def update_non_req_response_opt_out(
         return Response(status_code=401)
 
     request_cost = 5
-    headers = {'x-request-cost': request_cost}
+    headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
             settings_helper.VIEW_OTHERS_SETTINGS_PERMISSION,
@@ -443,7 +443,7 @@ def update_borrower_req_pm_opt_out(
         return Response(status_code=401)
 
     request_cost = 5
-    headers = {'x-request-cost': request_cost}
+    headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
             settings_helper.VIEW_OTHERS_SETTINGS_PERMISSION,
@@ -499,7 +499,7 @@ def update_ratelimit(
         return Response(status_code=401)
 
     request_cost = 5
-    headers = {'x-request-cost': request_cost}
+    headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
             settings_helper.VIEW_OTHERS_SETTINGS_PERMISSION,
