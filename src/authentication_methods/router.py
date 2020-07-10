@@ -420,16 +420,17 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
             )
 
         events = Table('password_authentication_events')
+        usrs = Table('users')
         query = (
             Query.from_(events)
-            .join(users).on(users.id == events.user_id)
+            .join(usrs).on(usrs.id == events.user_id)
             .where(events.password_authentication_id == Parameter('%s'))
             .select(
                 events.id,
                 events.type,
                 events.reason,
                 events.user_id,
-                users.username,
+                usrs.username,
                 events.reason,
                 events.created_at
             )
