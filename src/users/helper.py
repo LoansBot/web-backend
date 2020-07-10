@@ -220,7 +220,7 @@ def create_token_from_passauth(
         .where(pauths.id == Parameter('%s'))
         .returning(authtokens.id, authtokens.user_id)
         .get_sql(),
-        (token, expires_at, passauth_id, 'password_authentication', passauth_id)
+        (token, expires_at, 'password_authentication', passauth_id, passauth_id)
     )
     (authtoken_id, user_id) = itgs.write_cursor.fetchone()
     itgs.write_cursor.execute(

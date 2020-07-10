@@ -37,11 +37,15 @@ def user_with_token(
     authtokens = Table('authtokens')
     cursor.execute(
         Query.into(authtokens).columns(
-            authtokens.user_id, authtokens.token, authtokens.expires_at
-        ).insert(Parameter('%s'), Parameter('%s'), Now() + Interval(hours=1))
+            authtokens.user_id, authtokens.token, authtokens.expires_at,
+            authtokens.source_type, authtokens.source_id
+        ).insert(
+            Parameter('%s'), Parameter('%s'), Now() + Interval(hours=1),
+            Parameter('%s'), Parameter('%s')
+        )
         .returning(authtokens.id)
         .get_sql(),
-        (user_id, token)
+        (user_id, token, 'other', 1)
     )
     (auth_id,) = cursor.fetchone()
     perms = Table('permissions')

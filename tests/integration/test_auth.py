@@ -160,10 +160,14 @@ class AuthTests(unittest.TestCase):
             authtokens = Table('authtokens')
             self.cursor.execute(
                 Query.into(authtokens).columns(
-                    authtokens.user_id, authtokens.token, authtokens.expires_at
-                ).insert(Parameter('%s'), Parameter('%s'), Now() + Interval(hours=1))
+                    authtokens.user_id, authtokens.token, authtokens.expires_at,
+                    authtokens.source_type, authtokens.source_id
+                ).insert(
+                    Parameter('%s'), Parameter('%s'), Now() + Interval(hours=1),
+                    Parameter('%s'), Parameter('%s')
+                )
                 .get_sql(),
-                (user_id, 'testtoken')
+                (user_id, 'testtoken', 'other', 1)
             )
             self.conn.commit()
 
