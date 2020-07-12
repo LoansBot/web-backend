@@ -3,6 +3,15 @@ import typing
 from datetime import datetime
 
 
+class AuthMethodCreateResponse(BaseModel):
+    """The result from creating a new authentication method
+
+    Attributes:
+    - `id (int)`: The id of the newly created authentication method
+    """
+    id: int
+
+
 class UserAuthMethodsList(BaseModel):
     """The list authentication method ids for a user.
 
@@ -10,8 +19,11 @@ class UserAuthMethodsList(BaseModel):
     - `authentication_methods (list[int])`: An array containing the id of every
         authentication method the user has. No pagination since we anticipate this
         is short, plus it's just ints
+    - `can_add_more (bool)`: True if the authorized user can add more
+        authentication methods to this user, false if they cannot.
     """
     authentication_methods: typing.List[int]
+    can_add_more: bool
 
 
 class UserSettingsEvent(BaseModel):

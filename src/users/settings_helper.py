@@ -34,6 +34,13 @@ EDIT_OTHERS_RATELIMIT_SETTINGS_PERMISSION = 'edit-others-ratelimit-settings'
 """The permission required to edit ratelimit settings for other
 people."""
 
+ADD_SELF_AUTHENTICATION_METHODS_PERM = 'add-self-authentication-methods'
+"""The permission required to add authentication methods to ones own
+account"""
+
+ADD_OTHERS_AUTHENTICATION_METHODS_PERM = 'add-others-authentication-methods'
+"""The permission required to add authentication methods to others accounts"""
+
 
 class UserSettings(BaseModel):
     """The actual settings for a user. This is not something we necessarily

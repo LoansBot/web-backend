@@ -187,7 +187,8 @@ def revoke_permission(id: int, perm: str, authorization=Header(None)):
                 exists(
                     Query.from_(inner_auth_perms)
                     .where(inner_auth_perms.id == outer_auth_perms.id)
-                    .join(auth_methods).on(auth_methods.id == inner_auth_perms.password_authentication_id)
+                    .join(auth_methods).on(
+                        auth_methods.id == inner_auth_perms.password_authentication_id)
                     .join(permissions).on(permissions.id == inner_auth_perms.permission_id)
                     .where(auth_methods.id == Parameter('%s'))
                     .where(permissions.name == Parameter('%s'))

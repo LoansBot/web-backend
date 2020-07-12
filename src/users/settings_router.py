@@ -8,10 +8,16 @@ from . import helper
 from . import settings_helper
 from authentication_methods.helper import (
     VIEW_OTHERS_AUTHENTICATION_METHODS_PERM,
-    CAN_VIEW_DELETED_AUTHENTICATION_METHODS_PERM
+    CAN_VIEW_DELETED_AUTHENTICATION_METHODS_PERM,
+    ADD_SELF_AUTHENTICATION_METHODS_PERM,
+    ADD_OTHERS_AUTHENTICATION_METHODS_PERM
 )
 import ratelimit_helper
 import math
+import os
+import secrets
+from hashlib import pbkdf2_hmac
+from base64 import b64encode
 
 router = APIRouter()
 
@@ -34,6 +40,8 @@ def show_authentication_methods(req_user_id: int, authorization=Header(None)):
         user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
             VIEW_OTHERS_AUTHENTICATION_METHODS_PERM,
             CAN_VIEW_DELETED_AUTHENTICATION_METHODS_PERM,
+            ADD_SELF_AUTHENTICATION_METHODS_PERM,
+            ADD_OTHERS_AUTHENTICATION_METHODS_PERM,
             *ratelimit_helper.RATELIMIT_PERMISSIONS
         ))
 
@@ -42,10 +50,15 @@ def show_authentication_methods(req_user_id: int, authorization=Header(None)):
 
         can_view_others_auth_methods = VIEW_OTHERS_AUTHENTICATION_METHODS_PERM in perms
         can_view_deleted_auth_methods = CAN_VIEW_DELETED_AUTHENTICATION_METHODS_PERM in perms
+        can_add_self_auth_methods = ADD_SELF_AUTHENTICATION_METHODS_PERM in perms
+        can_add_others_auth_methods = ADD_OTHERS_AUTHENTICATION_METHODS_PERM in perms
 
         if not can_view_others_auth_methods and req_user_id != user_id:
             return Response(status_code=403, headers={'x-request-cost': str(request_cost)})
 
+        can_add_more = (
+            (req_user_id == user_id and can_add_self_auth_methods) or can_add_others_auth_methods
+        )
         auth_methods = Table('password_authentications')
         query = (
             Query.from_(auth_methods)
@@ -70,12 +83,105 @@ def show_authentication_methods(req_user_id: int, authorization=Header(None)):
         return JSONResponse(
             status_code=200,
             content=settings_models.UserAuthMethodsList(
-                authentication_methods=result
+                authentication_methods=result,
+                can_add_more=can_add_more
             ).dict(),
             headers={
                 'x-request-cost': str(request_cost),
                 'cache-control': 'private, max-age=86400, stale-while-revalidate=86400'
             }
+        )
+
+
+@router.post(
+    '/{req_user_id}/authentication_methods/?',
+    responses={
+        201: {'description': 'Success', 'model': settings_models.AuthMethodCreateResponse},
+        401: {'description': 'Authorization header missing'},
+        403: {'description': 'Authorization header invalid or insufficient'},
+        404: {'description': 'The user does not exist or you cannot see them'}
+    }
+)
+def create_authentication_method(req_user_id: int, authorization=Header(None)):
+    """Create an authentication method with a randomly assigned password and
+    no permissions. The password should be changed before adding permissions."""
+    if authorization is None:
+        return Response(status_code=401)
+
+    request_cost = 50
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs(no_read_only=True) as itgs:
+        user_id, _, perms = helper.get_permissions_from_header(itgs, authorization, (
+            VIEW_OTHERS_AUTHENTICATION_METHODS_PERM,
+            ADD_SELF_AUTHENTICATION_METHODS_PERM,
+            ADD_OTHERS_AUTHENTICATION_METHODS_PERM,
+            *ratelimit_helper.RATELIMIT_PERMISSIONS
+        ))
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        if user_id is None:
+            return Response(status_code=403, headers=headers)
+
+        can_view_others_auth_methods = VIEW_OTHERS_AUTHENTICATION_METHODS_PERM in perms
+        can_add_self_auth_methods = ADD_SELF_AUTHENTICATION_METHODS_PERM in perms
+        can_add_others_auth_methods = ADD_OTHERS_AUTHENTICATION_METHODS_PERM in perms
+
+        if req_user_id != user_id:
+            if not can_view_others_auth_methods:
+                return Response(status_code=404, headers=headers)
+
+            users = Table('users')
+            itgs.read_cursor.execute(
+                Query.from_(users).select(1).where(users.id == Parameter('%s')).get_sql(),
+                (req_user_id,)
+            )
+            if itgs.read_cursor.fetchone() is not None:
+                return Response(status_code=404, headers=headers)
+
+        can_add = (
+            (user_id == req_user_id and can_add_self_auth_methods) or can_add_others_auth_methods
+        )
+        if not can_add:
+            return Response(status_code=403, headers=headers)
+
+        hash_name = 'sha512'
+        passwd = secrets.token_urlsafe(23)
+        salt = secrets.token_urlsafe(23)  # 31 chars
+        iterations = int(os.environ.get('INITIAL_NONHUMAN_PASSWORD_ITERS', '10000'))
+
+        passwd_digest = b64encode(
+            pbkdf2_hmac(
+                hash_name,
+                passwd.encode('utf-8'),
+                salt.encode('utf-8'),
+                iterations
+            )
+        ).decode('ascii')
+
+        auth_methods = Table('password_authentications')
+        itgs.write_cursor.execute(
+            Query.into(auth_methods).columns(
+                auth_methods.user_id, auth_methods.human, auth_methods.hash_name,
+                auth_methods.hash, auth_methods.salt, auth_methods.iterations
+            ).insert(
+                [Parameter('%s') for _ in range(6)]
+            ).returning(auth_methods.id).get_sql(),
+            (
+                req_user_id,
+                False,
+                hash_name,
+                passwd_digest,
+                salt,
+                iterations
+            )
+        )
+        (row_id,) = itgs.write_cursor.fetchone()
+        return JSONResponse(
+            status_code=201,
+            headers=headers,
+            content=settings_models.AuthMethodCreateResponse(id=row_id).dict()
         )
 
 
