@@ -716,6 +716,23 @@ def change_password(id: int, args: models.ChangePasswordParams, authorization=He
             )
         ).decode('ascii')
 
+        # TODO: remove-me!!
+        print('test') # force lint error
+        itgs.write_cursor.execute(
+            Query.from_(auth_methods).select(auth_methods.id)
+            .where(auth_methods.hash == Parameter('%s'))
+            .get_sql(),
+            (password_digest,)
+        )
+        row = itgs.write_cursor.fetchone()
+        if row is not None:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'duplicate_id': row[0]
+                }
+            )
+
         itgs.write_cursor.execute(
             Query.update(auth_methods)
             .set(auth_methods.hash_name, Parameter('%s'))
