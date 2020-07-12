@@ -135,7 +135,6 @@ def revoke_permission(id: int, perm: str, authorization=Header(None)):
         can_view_deleted_auth_methods = helper.CAN_VIEW_DELETED_AUTHENTICATION_METHODS_PERM in perms
 
         auth_methods = Table('password_authentications')
-        auth_perms = Table('password_auth_permissions')
         authtokens = Table('authtokens')
         authtoken_perms = Table('authtoken_permissions')
         permissions = Table('permissions')
@@ -180,13 +179,22 @@ def revoke_permission(id: int, perm: str, authorization=Header(None)):
                 )
 
         itgs.write_cursor.execute(
-            Query.from_(auth_perms).delete()
-            .join(auth_methods).on(auth_methods.id == auth_perms.password_authentication_id)
-            .join(permissions).on(permissions.id == auth_perms.permission_id)
-            .where(auth_methods.id == Parameter('%s'))
-            .where(permissions.name == Parameter('%s'))
-            .returning(auth_perms.id)
-            .get_sql(),
+            '''
+            DELETE FROM password_auth_permissions outer
+            WHERE
+                EXISTS (
+                    SELECT FROM password_auth_permissions inner
+                    JOIN password_authentications ON
+                        password_authentications.id = inner.password_authentication_id
+                    JOIN permissions ON
+                        permissions.id = inner.permission_id
+                    WHERE
+                        inner.id = outer.id AND
+                        password_authentications.id = %s AND
+                        permissions.name = %s
+                )
+            RETURNING outer.id
+            '''
             (id, perm.lower())
         )
         found_any = not not itgs.write_cursor.fetchall()
