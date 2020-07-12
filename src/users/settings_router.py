@@ -180,6 +180,8 @@ def create_authentication_method(req_user_id: int, authorization=Header(None)):
             )
         )
         (row_id,) = itgs.write_cursor.fetchone()
+        itgs.write_conn.commit()
+
         return JSONResponse(
             status_code=201,
             headers=headers,
