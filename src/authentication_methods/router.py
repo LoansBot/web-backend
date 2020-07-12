@@ -180,10 +180,10 @@ def revoke_permission(id: int, perm: str, authorization=Header(None)):
 
         itgs.write_cursor.execute(
             '''
-            DELETE FROM password_auth_permissions outer
+            DELETE FROM password_auth_permissions AS outer
             WHERE
                 EXISTS (
-                    SELECT FROM password_auth_permissions inner
+                    SELECT FROM password_auth_permissions AS inner
                     JOIN password_authentications ON
                         password_authentications.id = inner.password_authentication_id
                     JOIN permissions ON
