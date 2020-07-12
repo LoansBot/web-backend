@@ -7,6 +7,7 @@ import ratelimit_helper
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
 from pypika.functions import Count, Star, Now
+from lbshared.pypika_crits import exists
 import math
 from hashlib import scrypt
 from base64 import b64encode
@@ -178,34 +179,40 @@ def revoke_permission(id: int, perm: str, authorization=Header(None)):
                     headers={'x-request-cost': str(request_cost)}
                 )
 
+        auth_perms = Table('password_auth_permissions')
+        outer_auth_perms = auth_perms.as_('outer_perms')
+        inner_auth_perms = auth_perms.as_('inner_perms')
         itgs.write_cursor.execute(
-            '''
-            DELETE FROM "password_auth_permissions" AS "outer"
-            WHERE
-                EXISTS (
-                    SELECT FROM "password_auth_permissions" AS "inner"
-                    JOIN "password_authentications" ON
-                        "password_authentications"."id" = "inner"."password_authentication_id"
-                    JOIN "permissions" ON
-                        "permissions"."id" = "inner"."permission_id"
-                    WHERE
-                        "inner"."id" = "outer"."id" AND
-                        "password_authentications"."id" = %s AND
-                        "permissions"."name" = %s
+            Query.from_(outer_auth_perms).delete().where(
+                exists(
+                    Query.from_(inner_auth_perms)
+                    where(inner_auth_perms.id == outer_auth_perms.id)
+                    .join(auth_methods).on(auth_methods.id == inner_auth_perms.password_authentication_id)
+                    .join(permissions).on(permissions.id == inner_auth_perms.permission_id)
+                    .where(auth_methods.id == Parameter('%s'))
+                    .where(permissions.name == Parameter('%s'))
                 )
-            RETURNING "outer"."id"
-            ''',
+            )
+            .returning(outer_auth_perms.id)
+            .get_sql(),
             (id, perm.lower())
         )
         found_any = not not itgs.write_cursor.fetchall()
 
+        outer_perms = authtoken_perms.as_('outer_perms')
+        inner_perms = authtoken_perms.as_('inner_perms')
         itgs.write_cursor.execute(
-            Query.from_(authtoken_perms).delete()
-            .join(authtokens).on(authtokens.id == authtoken_perms.authtoken_id)
-            .join(permissions).on(permissions.id == authtoken_perms.permission_id)
-            .where(authtokens.source_type == Parameter('%s'))
-            .where(authtokens.source_id == Parameter('%s'))
-            .where(permissions.name == Parameter('%s'))
+            Query.from_(outer_perms).delete().where(
+                exists(
+                    Query.from_(inner_perms)
+                    .where(inner_perms.id == outer_perms.id)
+                    .join(authtokens).on(authtokens.id == inner_perms.authtoken_id)
+                    .join(permissions).on(permissions.id == inner_perms.permission_id)
+                    .where(authtokens.source_type == Parameter('%s'))
+                    .where(authtokens.source_id == Parameter('%s'))
+                    .where(permissions.name == Parameter('%s'))
+                )
+            )
             .get_sql(),
             ('password_authentication', id, perm.lower())
         )
