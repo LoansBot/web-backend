@@ -6,11 +6,13 @@ from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
 from . import settings_models
 from . import helper
 from . import settings_helper
-from authentication_methods.helper import (
-    VIEW_OTHERS_AUTHENTICATION_METHODS_PERM,
-    CAN_VIEW_DELETED_AUTHENTICATION_METHODS_PERM,
+from .settings_helper import (
     ADD_SELF_AUTHENTICATION_METHODS_PERM,
     ADD_OTHERS_AUTHENTICATION_METHODS_PERM
+)
+from authentication_methods.helper import (
+    VIEW_OTHERS_AUTHENTICATION_METHODS_PERM,
+    CAN_VIEW_DELETED_AUTHENTICATION_METHODS_PERM
 )
 import ratelimit_helper
 import math
