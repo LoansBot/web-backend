@@ -194,7 +194,7 @@ def revoke_permission(id: int, perm: str, authorization=Header(None)):
                         permissions.name = %s
                 )
             RETURNING outer.id
-            '''
+            ''',
             (id, perm.lower())
         )
         found_any = not not itgs.write_cursor.fetchall()
