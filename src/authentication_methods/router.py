@@ -710,6 +710,7 @@ def change_password(id: int, args: models.ChangePasswordParams, authorization=He
                 salt=salt.encode('utf-8'),
                 n=iterations,
                 r=block_size,
+                p=1,
                 maxmem=128 * iterations * block_size + 1024 * 64,  # padding not necessary?
                 dklen=dklen
             )

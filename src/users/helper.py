@@ -106,6 +106,7 @@ def get_valid_passwd_auth(
                 salt=salt.encode('utf-8'),
                 n=iters,
                 r=block_size,
+                p=1,
                 maxmem=128 * iters * block_size + 1024 * 64,
                 dklen=dklen
             )
