@@ -227,7 +227,8 @@ def revoke_permission(id: int, perm: str, authorization=Header(None)):
                 )
                 .from_(permissions)
                 .select(
-                    Parameter('%s'), Parameter('%s'), Parameter('%s'), Parameter('%s'), permissions.id
+                    Parameter('%s'), Parameter('%s'), Parameter('%s'), Parameter('%s'),
+                    permissions.id
                 )
                 .where(permissions.name == Parameter('%s'))
                 .limit(1)
@@ -372,7 +373,8 @@ def grant_permission(id: int, perm: str, authorization=Header(None)):
                 )
                 .from_(permissions)
                 .select(
-                    Parameter('%s'), Parameter('%s'), Parameter('%s'), Parameter('%s'), permissions.id
+                    Parameter('%s'), Parameter('%s'), Parameter('%s'), Parameter('%s'),
+                    permissions.id
                 )
                 .where(permissions.name == Parameter('%s'))
                 .limit(1)
@@ -482,14 +484,17 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
             )
 
         events = Table('password_authentication_events')
+        permissions = Table('permissions')
         usrs = Table('users')
         query = (
             Query.from_(events)
             .join(usrs).on(usrs.id == events.user_id)
+            .left_join(permissions).on(permissions.id == events.permission_id)
             .where(events.password_authentication_id == Parameter('%s'))
             .select(
                 events.id,
                 events.type,
+                permissions.name,
                 events.reason,
                 events.user_id,
                 usrs.username,
@@ -520,6 +525,7 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
             (
                 this_id,
                 event_type,
+                permission_name,
                 event_reason,
                 event_user_id,
                 event_username,
@@ -545,6 +551,7 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
                 event_type=event_type,
                 reason=event_reason,
                 username=event_username,
+                permission=permission_name,
                 occurred_at=event_created_at.timestamp()
             ))
             row = itgs.read_cursor.fetchone()
@@ -555,7 +562,7 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
         if have_more:
             cache_control = 'private, max-age=604800'
         else:
-            cache_control = 'private, max-age=20, stale-while-revalidate=580'
+            cache_control = 'no-store'
             next_id = None
 
         return JSONResponse(

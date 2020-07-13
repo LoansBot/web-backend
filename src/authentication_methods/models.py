@@ -10,6 +10,7 @@ class AuthMethodHistoryItem(BaseModel):
     event_type: str
     reason: str
     username: str = None
+    permission: str = None
     occurred_at: float
 
 
