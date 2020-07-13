@@ -501,12 +501,12 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
                 events.reason,
                 events.created_at
             )
-            .orderby(events.id, order=Order.desc)
+            .orderby(events.id, order=Order.asc)  # Need ascending order for caching
         )
         args = [id]
 
         if after_id is not None:
-            query = query.where(events.id < Parameter('%s'))
+            query = query.where(events.id > Parameter('%s'))
             args.append(after_id)
 
         query = query.limit(Parameter('%s'))
