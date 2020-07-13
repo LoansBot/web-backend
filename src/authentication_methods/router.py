@@ -222,16 +222,18 @@ def revoke_permission(id: int, perm: str, authorization=Header(None)):
             events = Table('password_authentication_events')
             itgs.write_cursor.execute(
                 Query.into(events).columns(
-                    events.type, events.reason, events.user_id, events.permission_id
+                    events.password_authentication_id, events.type, events.reason,
+                    events.user_id, events.permission_id
                 )
                 .from_(permissions)
                 .select(
-                    Parameter('%s'), Parameter('%s'), Parameter('%s'), permissions.id
+                    Parameter('%s'), Parameter('%s'), Parameter('%s'), Parameter('%s'), permissions.id
                 )
                 .where(permissions.name == Parameter('%s'))
                 .limit(1)
                 .get_sql(),
                 (
+                    id,
                     'permission-revoked',
                     'No reason provided; performed manually',
                     user_id,
@@ -365,16 +367,18 @@ def grant_permission(id: int, perm: str, authorization=Header(None)):
             permissions = Table('permissions')
             itgs.write_cursor.execute(
                 Query.into(events).columns(
-                    events.type, events.reason, events.user_id, events.permission_id
+                    events.password_authentication_id, events.type, events.reason,
+                    events.user_id, events.permission_id
                 )
                 .from_(permissions)
                 .select(
-                    Parameter('%s'), Parameter('%s'), Parameter('%s'), permissions.id
+                    Parameter('%s'), Parameter('%s'), Parameter('%s'), Parameter('%s'), permissions.id
                 )
                 .where(permissions.name == Parameter('%s'))
                 .limit(1)
                 .get_sql(),
                 (
+                    id,
                     'permission-granted',
                     'No reason provided; performed manually',
                     user_id,
