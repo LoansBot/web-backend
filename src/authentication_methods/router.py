@@ -483,7 +483,8 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
 
             if len(result) >= limit:
                 have_more = True
-                continue
+                itgs.read_cursor.fetchall()
+                break
 
             if (not can_view_others_edit_notes
                     and event_user_id is not None  # system events, deleted users
@@ -498,8 +499,9 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
                 username=event_username,
                 occurred_at=event_created_at.timestamp()
             ))
+            row = itgs.read_cursor.fetchone()
 
-        if result is None:
+        if not result:
             return Response(status_code=204, headers={'x-request-cost': str(request_cost)})
 
         if have_more:
