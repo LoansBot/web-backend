@@ -217,6 +217,27 @@ def revoke_permission(id: int, perm: str, authorization=Header(None)):
             .get_sql(),
             ('password_authentication', id, perm.lower())
         )
+
+        if found_any:
+            events = Table('password_authentication_events')
+            itgs.write_cursor.execute(
+                Query.into(events).columns(
+                    events.type, events.reason, events.user_id, events.permission_id
+                )
+                .from_(permissions)
+                .select(
+                    Parameter('%s'), Parameter('%s'), Parameter('%s'), permissions.id
+                )
+                .where(permissions.name == Parameter('%s'))
+                .limit(1)
+                .get_sql(),
+                (
+                    'permission-revoked',
+                    'No reason provided; performed manually',
+                    user_id,
+                    perm.lower()
+                )
+            )
         itgs.write_conn.commit()
 
         if not found_any:
@@ -339,6 +360,27 @@ def grant_permission(id: int, perm: str, authorization=Header(None)):
             (id, perm.lower(), id, perm.lower())
         )
         inserted_any = itgs.read_cursor.fetchone() is not None
+        if inserted_any:
+            events = Table('password_authentication_events')
+            permissions = Table('permissions')
+            itgs.write_cursor.execute(
+                Query.into(events).columns(
+                    events.type, events.reason, events.user_id, events.permission_id
+                )
+                .from_(permissions)
+                .select(
+                    Parameter('%s'), Parameter('%s'), Parameter('%s'), permissions.id
+                )
+                .where(permissions.name == Parameter('%s'))
+                .limit(1)
+                .get_sql(),
+                (
+                    'permission-granted',
+                    'No reason provided; performed manually',
+                    user_id,
+                    perm.lower()
+                )
+            )
 
         itgs.write_conn.commit()
 
@@ -450,12 +492,12 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
                 events.reason,
                 events.created_at
             )
-            .orderby(events.id, order=Order.asc)
+            .orderby(events.id, order=Order.desc)
         )
         args = [id]
 
         if after_id is not None:
-            query = query.where(events.id > Parameter('%s'))
+            query = query.where(events.id < Parameter('%s'))
             args.append(after_id)
 
         query = query.limit(Parameter('%s'))
