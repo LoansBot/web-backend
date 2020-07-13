@@ -260,7 +260,7 @@ def index_user_history(
             query = query.where(events.id < Parameter('$3'))
             args.append(before_id)
 
-        itgs.read_cursor.execute(*convert_numbered_args(query, args))
+        itgs.read_cursor.execute(*convert_numbered_args(query.get_sql(), args))
         result = []
         have_more = False
         row = itgs.read_cursor.fetchone()
