@@ -455,7 +455,7 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
         args = [id]
 
         if after_id is not None:
-            query = query.where(events.id > after_id)
+            query = query.where(events.id > Parameter('%s'))
             args.append(after_id)
 
         query = query.limit(Parameter('%s'))
