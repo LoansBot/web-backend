@@ -271,8 +271,8 @@ def index_user_history(
                 have_more = True
             row = itgs.read_cursor.fetchone()
 
-        if before_id is not None:
-            headers['Cache-Control'] = 'private, max-age=86400, stale-while-revalidate=518400'
+        # Not cacheable; inserting an item at the front breaks all the pages
+        headers['Cache-Control'] = 'no-store'
 
         return JSONResponse(
             status_code=200,

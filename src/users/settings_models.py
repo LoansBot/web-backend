@@ -49,11 +49,12 @@ class UserSettingsHistory(BaseModel):
     """Describes the history for user settings, in a paginated form.
 
     Attributes:
-    - `before_id (int)`: An id above all the remaining ids. This can be used to
-        paginate backwards.
+    - `before_id (int, None)`: An id above all the remaining ids. This can be
+        used to paginate backwards. None if there are no earlier history
+        events.
     - `history (list[int])`: A list of history event ids from newest to oldest.
     """
-    before_id: int
+    before_id: int = None
     history: typing.List[int]
 
 
