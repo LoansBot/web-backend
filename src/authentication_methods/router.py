@@ -472,7 +472,7 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
         row = itgs.read_cursor.fetchone()
         while row is not None:
             (
-                next_id,
+                this_id,
                 event_type,
                 event_reason,
                 event_user_id,
@@ -485,6 +485,8 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
                 have_more = True
                 itgs.read_cursor.fetchall()
                 break
+
+            next_id = this_id
 
             if (not can_view_others_edit_notes
                     and event_user_id is not None  # system events, deleted users
