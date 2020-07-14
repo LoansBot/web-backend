@@ -223,7 +223,7 @@ def create_settings_events(
     """
     events = Table('user_settings_events')
     sql = (
-        Query.into_(events).columns(
+        Query.into(events).columns(
             events.user_id, events.changer_user_id, events.property_name,
             events.old_value, events.new_value
         ).insert(*[tuple(Parameter('%s') for _ in range(5)) for _ in changes])
