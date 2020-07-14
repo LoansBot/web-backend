@@ -279,7 +279,7 @@ def index_user_history(
             content=settings_models.UserSettingsHistory(
                 before_id=(min(result) if result else None) if have_more else None,
                 history=result
-            ),
+            ).dict(),
             headers=headers
         )
 
