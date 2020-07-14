@@ -10,7 +10,9 @@ ratelimit changes will _generally_ be beneficial (i.e., reducing restrictions),
 so freezing as a default probably won't be beneficial.
 """
 from pydantic import BaseModel
+from pypika import PostgreSQLQuery as Query, Table, Parameter
 import time
+import json
 
 
 VIEW_OTHERS_SETTINGS_PERMISSION = 'view-others-settings'
@@ -140,6 +142,12 @@ def set_settings(itgs, user_id: int, **values) -> list:
     occur at the same time, it's a race condition for who wins if their is
     overlap in the settings being changed.
 
+    Note:
+      This directly sets the settings. We usually store events alongside these
+      so that we have a history of the settings. This function does not do that.
+      One can use "create_settings_events" on the return value for this event to
+      do that.
+
     Attributes:
     - `itgs (LazyIntegrations)`: The integrations to use to connect to the store
     - `user_id (int)`: The id of the user whose settings should be changed.
@@ -193,3 +201,42 @@ def set_settings(itgs, user_id: int, **values) -> list:
                 raise Exception(f'Ludicrously high contention on user settings for {user_id}')
 
     raise Exception('All 10 attempts to set user settings failed')
+
+
+def create_settings_events(
+        itgs, user_id: int, changer_user_id: int, changes: dict, commit=False):
+    """Create user settings events from the given list of changes. These allow
+    us to maintain a history of a users settings and who changes them.
+
+    Arguments:
+    - `itgs (LazyIntegrations)`: The integrations to use to connect to
+        networked components.
+    - `user_id (int)`: The id of the user whose settings changed
+    - `changer_user_id (int)`: The id of the user who changed the settings
+    - `changes (dict[str, dict])`: A dictionary where the keys are the property
+        names that changes and the values are dictionaries with a fixed shape;
+        two keys "old" and "new" which correspond to the old and new value
+        of this property respectively. We serialize using json.
+    - `commit (bool)`: If True we will commit the changes immediately. Defaults
+        to false as it's easier to read controllers if all commits are explicit,
+        i.e., the controller at least says `commit=True`
+    """
+    events = Table('user_settings_events')
+    sql = (
+        Query.into_(events).columns(
+            events.user_id, events.changer_user_id, events.property_name,
+            events.old_value, events.new_value
+        ).insert(*[tuple(Parameter('%s') for _ in range(5)) for _ in changes])
+        .get_sql()
+    )
+    args = []
+    for (prop_name, change) in changes.items():
+        args.append(user_id)
+        args.append(changer_user_id)
+        args.append(prop_name)
+        args.append(json.dumps(change['old']))
+        args.append(json.dumps(change['new']))
+
+    itgs.write_cursor.execute(sql, args)
+    if commit:
+        itgs.write_conn.commit()
