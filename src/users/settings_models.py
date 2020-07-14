@@ -106,7 +106,7 @@ class UserSettingRatelimit(BaseModel):
 
     @validator('max_tokens', 'refill_amount', 'refill_time_ms')
     def positive(cls, v):
-        if v is None and v <= 0:
+        if v is not None and v <= 0:
             raise ValueError('must be positive')
         return v
 
