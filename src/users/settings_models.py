@@ -42,7 +42,7 @@ class UserSettingsEvent(BaseModel):
     old_value: typing.Any
     new_value: typing.Any
     username: str = None
-    occurred_at: datetime
+    occurred_at: float
 
 
 class UserSettingsHistory(BaseModel):
