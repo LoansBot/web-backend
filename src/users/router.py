@@ -420,12 +420,12 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
 
     with LazyItgs(no_read_only=True) as itgs:
         if not security.ratelimit(
-                itgs.cache, 'MAX_USE_CLAIM_TOKEN', 'use_claim_token',
+                itgs, 'MAX_USE_CLAIM_TOKEN', 'use_claim_token',
                 defaults={60: 5, 600: 30}):
             return Response(status_code=429)
 
         if not security.ratelimit(
-                itgs.cache, 'MAX_USE_CLAIM_TOKEN_INDIV',
+                itgs, 'MAX_USE_CLAIM_TOKEN_INDIV',
                 f'use_claim_token_{args.user_id}',
                 defaults={
                     int(timedelta(minutes=2).total_seconds()): 1,
