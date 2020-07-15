@@ -320,7 +320,7 @@ def check_permissions(user_id: int, authorization: str = Header(None)):
 def request_claim_token(args: models.ClaimRequestArgs):
     """Sends a link to the reddit user with the given username which can be
     used to prove identity."""
-    username = args.username
+    username = args.username.lower()
     token = args.captcha_token
     if len(username) > 32:
         return JSONResponse(
@@ -356,7 +356,7 @@ def request_claim_token(args: models.ClaimRequestArgs):
             Query.from_(users).select(users.id)
             .where(users.username == Parameter('%s'))
             .get_sql(),
-            (username.lower(),)
+            (username,)
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
@@ -438,6 +438,6 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
         if not helper.attempt_consume_claim_token(itgs, args.user_id, args.claim_token):
             return Response(status_code=403)
         helper.create_or_update_human_password_auth(
-            itgs, args.user_id, args.password
+            itgs, args.user_id, args.password, commit=True
         )
     return Response(status_code=200)
