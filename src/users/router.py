@@ -368,7 +368,6 @@ def request_claim_token(args: models.ClaimRequestArgs):
         send_queue = os.environ['AMQP_REDDIT_PROXY_QUEUE']
         url_root = os.environ['ROOT_DOMAIN']
         itgs.channel.queue_declare(queue=send_queue)
-        token = str(uuid.uuid4())
         itgs.channel.basic_publish(
             exchange='',
             routing_key=send_queue,
