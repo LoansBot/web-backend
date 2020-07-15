@@ -329,6 +329,12 @@ def request_claim_token(args: models.ClaimRequestArgs):
         )
 
     with LazyItgs(no_read_only=True) as itgs:
+        if not security.verify_captcha(itgs, token):
+            return JSONResponse(
+                status_code=400,
+                content=main_models.ErrorResponse(message='captcha invalid').dict()
+            )
+
         if not security.ratelimit(
                 itgs, 'MAX_REQUEST_CLAIM_TOKEN', 'request_claim_token',
                 defaults={60: 5, 600: 30}):
@@ -345,18 +351,12 @@ def request_claim_token(args: models.ClaimRequestArgs):
                 }):
             return Response(status_code=429)
 
-        if not security.verify_captcha(itgs, token):
-            return JSONResponse(
-                status_code=400,
-                content=main_models.ErrorResponse(message='captcha invalid').dict()
-            )
-
         users = Table('users')
         itgs.read_cursor.execute(
             Query.from_(users).select(users.id)
             .where(users.username == Parameter('%s'))
             .get_sql(),
-            (username,)
+            (username.lower(),)
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
