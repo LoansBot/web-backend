@@ -150,7 +150,7 @@ def suggest(q: str, limit: int = 3, authorization=Header(None)):
 
         users = Table('users')
         itgs.read_cursor.execute(
-            Query.from_(users).select(users.id)
+            Query.from_(users).select(users.username)
             .where(users.username.like(Parameter('%s')))
             .limit(limit)
             .get_sql(),
