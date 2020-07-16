@@ -76,44 +76,6 @@ def logout(auth: models.TokenAuthentication):
 
 
 @router.get(
-    '/{req_user_id}',
-    tags=['users'],
-    responses={
-        200: {'description': 'Success', 'model': models.UserShowResponse},
-        404: {'description': 'No such user exists or you cannot see them.'}
-    }
-)
-def show(req_user_id: int, authorization=Header(None)):
-    request_cost = 1
-
-    headers = {'x-request-cost': str(request_cost)}
-    with LazyItgs() as itgs:
-        user_id, _, perms = helper.get_permissions_from_header(
-            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
-        )
-
-        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
-            return Response(status_code=429, headers=headers)
-
-        users = Table('users')
-        itgs.read_cursor.execute(
-            Query.from_(users).select(users.username)
-            .where(users.id == Parameter('%s')).get_sql(),
-            (req_user_id,)
-        )
-        row = itgs.read_cursor.fetchone()
-        if row is None:
-            return Response(status_code=404, headers=headers)
-
-        headers['Cache-Control'] = 'public, max-age=604800, immutable'
-        return JSONResponse(
-            status_code=200,
-            content=models.UserShowResponse(username=row[0]).dict(),
-            headers=headers
-        )
-
-
-@router.get(
     '/lookup',
     tags=['users'],
     responses={
@@ -440,3 +402,41 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
             itgs, args.user_id, args.password, commit=True
         )
     return Response(status_code=200)
+
+
+@router.get(
+    '/{req_user_id}',
+    tags=['users'],
+    responses={
+        200: {'description': 'Success', 'model': models.UserShowResponse},
+        404: {'description': 'No such user exists or you cannot see them.'}
+    }
+)
+def show(req_user_id: int, authorization=Header(None)):
+    request_cost = 1
+
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = helper.get_permissions_from_header(
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
+        )
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        users = Table('users')
+        itgs.read_cursor.execute(
+            Query.from_(users).select(users.username)
+            .where(users.id == Parameter('%s')).get_sql(),
+            (req_user_id,)
+        )
+        row = itgs.read_cursor.fetchone()
+        if row is None:
+            return Response(status_code=404, headers=headers)
+
+        headers['Cache-Control'] = 'public, max-age=604800, immutable'
+        return JSONResponse(
+            status_code=200,
+            content=models.UserShowResponse(username=row[0]).dict(),
+            headers=headers
+        )
