@@ -161,7 +161,7 @@ def suggest(q: str, limit: int = 3, authorization=Header(None)):
             return Response(status_code=204)
         result = []
         while row is not None:
-            result.append(row)
+            result.append(row[0])
             row = itgs.read_cursor.fetchone()
 
         headers['Cache-Control'] = 'public, max-age=86400, stale-while-revalidate=518400'
