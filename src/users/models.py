@@ -1,7 +1,8 @@
 """Contains the models that are used for users"""
 from models import SuccessResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 import typing
+import re
 
 
 class PasswordAuthentication(BaseModel):
@@ -32,6 +33,12 @@ class ClaimRequestArgs(BaseModel):
     """A username and captcha token"""
     username: str
     captcha_token: str
+
+    @validator('username')
+    def matches_username_regex(cls, v):
+        if not re.match(r'[A-Za-z0-9_-]{3,20}', v):
+            raise ValueError('be a valid username')
+        return v
 
 
 class ClaimArgs(BaseModel):
