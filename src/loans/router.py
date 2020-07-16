@@ -12,6 +12,7 @@ from datetime import datetime
 import sqlparse
 import time
 from .edit_router import router as edit_router
+import ratelimit_helper
 
 
 router = APIRouter()
@@ -142,14 +143,14 @@ def index(
 
     with LazyItgs() as itgs:
         user_id, _, perms = users.helper.get_permissions_from_header(
-            itgs, authorization, (helper.DELETED_LOANS_PERM, *helper.RATELIMIT_PERMISSIONS)
+            itgs, authorization, (
+                helper.DELETED_LOANS_PERM,
+                *ratelimit_helper.RATELIMIT_PERMISSIONS
+            )
         )
-        if perms:
-            perms = tuple(perms)
-        else:
-            perms = tuple()
 
-        if not helper.check_ratelimit(itgs, user_id, perms, 1 if dry_run else request_cost):
+        real_req_cost = 1 if dry_run else request_cost
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, real_req_cost):
             return Response(
                 status_code=429,
                 headers={'x-request-cost': str(request_cost)}
@@ -328,14 +329,13 @@ def index(
 def show(loan_id: int, authorization: str = Header(None)):
     with LazyItgs() as itgs:
         user_id, _, perms = users.helper.get_permissions_from_header(
-            itgs, authorization, (helper.DELETED_LOANS_PERM, *helper.RATELIMIT_PERMISSIONS)
+            itgs, authorization, (
+                helper.DELETED_LOANS_PERM,
+                *ratelimit_helper.RATELIMIT_PERMISSIONS
+            )
         )
-        if perms:
-            perms = tuple(perms)
-        else:
-            perms = tuple()
 
-        if not helper.check_ratelimit(itgs, user_id, perms, 1):
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, 1):
             return Response(status_code=429)
 
         basic = helper.get_basic_loan_info(itgs, loan_id, perms)
@@ -368,15 +368,11 @@ def show_detailed(loan_id: int, authorization: str = Header(None)):
             itgs, authorization, (
                 helper.DELETED_LOANS_PERM,
                 helper.VIEW_ADMIN_EVENT_AUTHORS_PERM,
-                *helper.RATELIMIT_PERMISSIONS
+                *ratelimit_helper.RATELIMIT_PERMISSIONS
             )
         )
-        if perms:
-            perms = tuple(perms)
-        else:
-            perms = tuple()
 
-        if not helper.check_ratelimit(itgs, user_id, perms, 5):
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, 5):
             return Response(status_code=429)
 
         basic = helper.get_basic_loan_info(itgs, loan_id, perms)

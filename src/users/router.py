@@ -3,17 +3,19 @@ from fastapi.responses import Response, JSONResponse
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 from . import helper
 from . import models
+from users.settings_router import router as settings_router
 import models as main_models
 import security
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from datetime import timedelta
+import ratelimit_helper
 import os
-import uuid
 import time
 import json
 
 
 router = APIRouter()
+router.include_router(settings_router)
 
 
 @router.post(
@@ -70,6 +72,103 @@ def logout(auth: models.TokenAuthentication):
         )
         itgs.write_conn.commit()
         return Response(status_code=200)
+
+
+@router.get(
+    '/lookup',
+    tags=['users'],
+    responses={
+        200: {'description': 'Success', 'model': models.UserLookupResponse},
+        404: {'description': 'No such user exists or you cannot see them'}
+    }
+)
+def lookup(q: str, authorization=Header(None)):
+    """Allows looking up a user id by a username. q is the username to lookup"""
+    request_cost = 1
+
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = helper.get_permissions_from_header(
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS)
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        users = Table('users')
+        itgs.read_cursor.execute(
+            Query.from_(users).select(users.id)
+            .where(users.username == Parameter('%s')).get_sql(),
+            (q.lower(),)
+        )
+        row = itgs.read_cursor.fetchone()
+        if row is None:
+            return Response(status_code=404, headers=headers)
+
+        headers['Cache-Control'] = 'public, max-age=604800, immutable'
+        return JSONResponse(
+            status_code=200,
+            content=models.UserLookupResponse(id=row[0]).dict(),
+            headers=headers
+        )
+
+
+@router.get(
+    '/suggest',
+    responses={
+        200: {'description': 'Success', 'model': models.UserSuggestResponse},
+        204: {'description': 'Success; no suggestions'}
+    }
+)
+def suggest(q: str, limit: int = 3, authorization=Header(None)):
+    """Suggest some usernames that partially match the query. q is the partial
+    username string"""
+    if limit <= 0:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['limit'],
+                    'msg': 'Must be positive',
+                    'type': 'range_error'
+                }
+            }
+        )
+
+    # This is actually moderately expensive since we don't use the correct
+    # index for this, but we could switch to a real searching technique to
+    # speed it up if this endpoint is problematic, so we'll under-charge here.
+    request_cost = 10 + limit
+
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = helper.get_permissions_from_header(
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS)
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        users = Table('users')
+        itgs.read_cursor.execute(
+            Query.from_(users).select(users.username)
+            .where(users.username.like(Parameter('%s')))
+            .limit(limit)
+            .get_sql(),
+            ('%' + q.lower() + '%',)
+        )
+        row = itgs.read_cursor.fetchone()
+        if row is None:
+            return Response(status_code=204)
+        result = []
+        while row is not None:
+            result.append(row[0])
+            row = itgs.read_cursor.fetchone()
+
+        headers['Cache-Control'] = 'public, max-age=86400, stale-while-revalidate=518400'
+        return JSONResponse(
+            status_code=200,
+            content=models.UserSuggestResponse(suggestions=result).dict(),
+            headers=headers
+        )
 
 
 @router.get(
@@ -182,7 +281,7 @@ def check_permissions(user_id: int, authorization: str = Header(None)):
 def request_claim_token(args: models.ClaimRequestArgs):
     """Sends a link to the reddit user with the given username which can be
     used to prove identity."""
-    username = args.username
+    username = args.username.lower()
     token = args.captcha_token
     if len(username) > 32:
         return JSONResponse(
@@ -191,6 +290,12 @@ def request_claim_token(args: models.ClaimRequestArgs):
         )
 
     with LazyItgs(no_read_only=True) as itgs:
+        if not security.verify_captcha(itgs, token):
+            return JSONResponse(
+                status_code=400,
+                content=main_models.ErrorResponse(message='captcha invalid').dict()
+            )
+
         if not security.ratelimit(
                 itgs, 'MAX_REQUEST_CLAIM_TOKEN', 'request_claim_token',
                 defaults={60: 5, 600: 30}):
@@ -206,12 +311,6 @@ def request_claim_token(args: models.ClaimRequestArgs):
                     int(timedelta(weeks=1).total_seconds()): 5
                 }):
             return Response(status_code=429)
-
-        if not security.verify_captcha(itgs, token):
-            return JSONResponse(
-                status_code=400,
-                content=main_models.ErrorResponse(message='captcha invalid').dict()
-            )
 
         users = Table('users')
         itgs.read_cursor.execute(
@@ -230,7 +329,6 @@ def request_claim_token(args: models.ClaimRequestArgs):
         send_queue = os.environ['AMQP_REDDIT_PROXY_QUEUE']
         url_root = os.environ['ROOT_DOMAIN']
         itgs.channel.queue_declare(queue=send_queue)
-        token = str(uuid.uuid4())
         itgs.channel.basic_publish(
             exchange='',
             routing_key=send_queue,
@@ -282,12 +380,12 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
 
     with LazyItgs(no_read_only=True) as itgs:
         if not security.ratelimit(
-                itgs.cache, 'MAX_USE_CLAIM_TOKEN', 'use_claim_token',
+                itgs, 'MAX_USE_CLAIM_TOKEN', 'use_claim_token',
                 defaults={60: 5, 600: 30}):
             return Response(status_code=429)
 
         if not security.ratelimit(
-                itgs.cache, 'MAX_USE_CLAIM_TOKEN_INDIV',
+                itgs, 'MAX_USE_CLAIM_TOKEN_INDIV',
                 f'use_claim_token_{args.user_id}',
                 defaults={
                     int(timedelta(minutes=2).total_seconds()): 1,
@@ -300,6 +398,44 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
         if not helper.attempt_consume_claim_token(itgs, args.user_id, args.claim_token):
             return Response(status_code=403)
         helper.create_or_update_human_password_auth(
-            itgs, args.user_id, args.password
+            itgs, args.user_id, args.password, commit=True
         )
     return Response(status_code=200)
+
+
+@router.get(
+    '/{req_user_id}',
+    tags=['users'],
+    responses={
+        200: {'description': 'Success', 'model': models.UserShowResponse},
+        404: {'description': 'No such user exists or you cannot see them.'}
+    }
+)
+def show(req_user_id: int, authorization=Header(None)):
+    request_cost = 1
+
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = helper.get_permissions_from_header(
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
+        )
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        users = Table('users')
+        itgs.read_cursor.execute(
+            Query.from_(users).select(users.username)
+            .where(users.id == Parameter('%s')).get_sql(),
+            (req_user_id,)
+        )
+        row = itgs.read_cursor.fetchone()
+        if row is None:
+            return Response(status_code=404, headers=headers)
+
+        headers['Cache-Control'] = 'public, max-age=604800, immutable'
+        return JSONResponse(
+            status_code=200,
+            content=models.UserShowResponse(username=row[0]).dict(),
+            headers=headers
+        )

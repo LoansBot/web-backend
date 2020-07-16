@@ -1,7 +1,8 @@
 """Contains the models that are used for users"""
 from models import SuccessResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 import typing
+import re
 
 
 class PasswordAuthentication(BaseModel):
@@ -33,6 +34,12 @@ class ClaimRequestArgs(BaseModel):
     username: str
     captcha_token: str
 
+    @validator('username')
+    def matches_username_regex(cls, v):
+        if not re.match(r'[A-Za-z0-9_-]{3,20}', v):
+            raise ValueError('be a valid username')
+        return v
+
 
 class ClaimArgs(BaseModel):
     """Claim an account using a claim token, setting the human password to
@@ -48,6 +55,30 @@ class UserShowSelfResponse(BaseModel):
     username: str
 
 
+class UserShowResponse(BaseModel):
+    """The response for showing a particular user by id"""
+    username: str
+
+
 class UserPermissions(BaseModel):
     """The response that's provided for a users permissions."""
     permissions: typing.List[str]
+
+
+class UserLookupResponse(BaseModel):
+    """The success response to looking up a user by their username
+
+    Attributes:
+    - `id (int)`: The users id
+    """
+    id: int
+
+
+class UserSuggestResponse(BaseModel):
+    """The success response to searching for users with a partial
+    match.
+
+    Attributes:
+    - `suggestions (list[str])`: The list of usernames we suggest
+    """
+    suggestions: typing.List[str]

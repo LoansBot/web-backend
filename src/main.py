@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, status
+from fastapi.responses import Response
 from blanket_cors_middleware import BlanketCORSMiddleware
 from lblogging import Level
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
@@ -8,6 +9,8 @@ import users.router
 import logs.router
 import responses.router
 import loans.router
+import permissions.router
+import authentication_methods.router
 import traceback
 
 
@@ -20,6 +23,8 @@ app.include_router(users.router.router, prefix='/users')
 app.include_router(logs.router.router, prefix='/logs')
 app.include_router(responses.router.router, prefix='/responses')
 app.include_router(loans.router.router, prefix='/loans')
+app.include_router(permissions.router.router, prefix='/permissions')
+app.include_router(authentication_methods.router.router, prefix='/authentication_methods')
 
 
 @app.exception_handler(Exception)
