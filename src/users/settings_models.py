@@ -1,6 +1,5 @@
 from pydantic import BaseModel, validator
 import typing
-from datetime import datetime
 
 
 class AuthMethodCreateResponse(BaseModel):

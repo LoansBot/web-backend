@@ -10,7 +10,6 @@ from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from datetime import timedelta
 import ratelimit_helper
 import os
-import uuid
 import time
 import json
 
