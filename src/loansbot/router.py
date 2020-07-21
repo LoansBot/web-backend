@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Header
 from fastapi.responses import Response
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
+from lblogging import Level
 from . import models
 from . import helper
 import users.helper
@@ -45,7 +46,8 @@ def create_recheck(req: models.RecheckRequest, authorization=Header(None)):
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_success_cost):
             return Response(status_code=429, headers=headers)
 
-        itgs.logger.debug(
+        itgs.logger.print(
+            Level.DEBUG,
             'User {} queued a request on https://reddit.com/comments/{}/lb/{}',
             user_id, req.link_fullname[3:], req.comment_fullname[3:]
         )
