@@ -9,6 +9,7 @@ import users.router
 import logs.router
 import responses.router
 import loans.router
+import loansbot.router
 import permissions.router
 import authentication_methods.router
 import traceback
@@ -25,6 +26,7 @@ app.include_router(responses.router.router, prefix='/responses')
 app.include_router(loans.router.router, prefix='/loans')
 app.include_router(permissions.router.router, prefix='/permissions')
 app.include_router(authentication_methods.router.router, prefix='/authentication_methods')
+app.include_router(loansbot.router.router, prefix='/loansbot')
 
 
 @app.exception_handler(Exception)
