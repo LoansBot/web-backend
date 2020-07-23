@@ -26,7 +26,7 @@ def create_recheck(req: models.RecheckRequest, authorization=Header(None)):
     request_attempt_cost = 5
     request_success_cost = 145
 
-    headers = {'x-request-cost': request_attempt_cost}
+    headers = {'x-request-cost': str(request_attempt_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = users.helper.get_permissions_from_header(
             itgs, authorization, (
@@ -42,7 +42,7 @@ def create_recheck(req: models.RecheckRequest, authorization=Header(None)):
         if not can_recheck:
             return Response(status_code=403, headers=headers)
 
-        headers['x-request-cost'] = request_attempt_cost + request_success_cost
+        headers['x-request-cost'] = str(request_attempt_cost + request_success_cost)
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_success_cost):
             return Response(status_code=429, headers=headers)
 
