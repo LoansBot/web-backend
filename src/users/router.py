@@ -4,6 +4,7 @@ from pypika import PostgreSQLQuery as Query, Table, Parameter
 from . import helper
 from . import models
 from users.settings_router import router as settings_router
+from users.demographics_router import router as demographics_router
 import models as main_models
 import security
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
@@ -16,6 +17,7 @@ import json
 
 router = APIRouter()
 router.include_router(settings_router)
+router.include_router(demographics_router)
 
 
 @router.post(
