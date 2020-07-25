@@ -350,7 +350,7 @@ def create_or_update_human_password_auth(
         'INSERT INTO password_authentications('
             'user_id, human, hash_name, hash, salt, iterations) '  # noqa: E131
         'VALUES(%s, %s, %s, %s, %s, %s)'
-        'ON CONFLICT (user_id, human)'
+        'ON CONFLICT (user_id, human) WHERE human '
             'DO UPDATE SET hash_name=%s, hash=%s, salt=%s, iterations=%s'  # noqa: E131
         'RETURNING id',
         (user_id, True, hash_name, passwd_digest, salt, iterations,
