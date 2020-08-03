@@ -10,6 +10,7 @@ import os
 import secrets
 import json
 import time
+from datetime import datetime
 
 
 MAX_AUTHTOKEN_AGE_FOR_DEMOGRAPHICS_SECONDS = 3600
@@ -107,6 +108,8 @@ def get_failure_response_or_user_id_and_perms_for_authorization(
     if authtoken_provided is None:
         failure_type = 401
     else:
+        max_age = datetime.fromtimestamp(
+            time.time() - MAX_AUTHTOKEN_AGE_FOR_DEMOGRAPHICS_SECONDS)
         auths = Table('authtokens')
         password_auths = Table('password_authentications')
         itgs.read_cursor.execute(
@@ -115,14 +118,14 @@ def get_failure_response_or_user_id_and_perms_for_authorization(
             .join(password_auths).on(password_auths.id == auths.source_id)
             .where(auths.source_type == Parameter('%s'))
             .where(auths.token == Parameter('%s'))
-            .where(auths.created_at > (Now() - Interval(seconds=Parameter('%s'))))
+            .where(auths.created_at > Parameter('%s'))
             .where(password_auths.human.eq(True))
             .limit(1)
             .get_sql(),
             (
                 'password_authentication',
                 authtoken_provided,
-                MAX_AUTHTOKEN_AGE_FOR_DEMOGRAPHICS_SECONDS
+                max_age
             )
         )
         row = itgs.read_cursor.fetchone()
