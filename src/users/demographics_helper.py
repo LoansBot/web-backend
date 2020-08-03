@@ -175,7 +175,7 @@ def get_failure_response_or_user_id_and_perms_for_authorization(
         .select(permissions.name)
         .join(permissions).on(permissions.id == authtoken_perms.permission_id)
         .where(authtoken_perms.authtoken_id == Parameter('%s'))
-        .where(permissions.name.isin(*[Parameter('%s') for _ in check_permissions]))
+        .where(permissions.name.isin([Parameter('%s') for _ in check_permissions]))
         .get_sql(),
         [
             authtoken_id,
