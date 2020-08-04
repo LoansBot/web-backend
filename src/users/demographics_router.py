@@ -425,7 +425,7 @@ def destroy(req_user_id: int, captcha: str, authorization=Header(None)):
 
         demo_id = row[0]
 
-        demo_history = Table('user_demopgraphic_history')
+        demo_history = Table('user_demographic_history')
         itgs.write_cursor.execute(
             Query.update(demo_history)
             .set(demo_history.old_email, None)
