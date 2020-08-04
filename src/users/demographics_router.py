@@ -85,9 +85,14 @@ def show(req_user_id: int, captcha: str, authorization=Header(None)):
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
-            return Response(status_code=404, headers=headers)
+            (
+                email, name, street_address, city, state, zip_, country, deleted
+            ) = (None, None, None, None, None, None, None, False)
+        else:
+            (
+                email, name, street_address, city, state, zip_, country, deleted
+            ) = row
 
-        (email, name, street_address, city, state, zip_, country, deleted) = row
         if deleted:
             return Response(status_code=451, headers=headers)
 
