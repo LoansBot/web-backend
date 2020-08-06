@@ -245,10 +245,10 @@ def lookup(
             (country, demos.country)
         ]
 
-        for (query, field) in search_fields:
-            if query is not None:
+        for (query_param, field) in search_fields:
+            if query_param is not None:
                 query = query.where(field.ilike(Parameter(f'${len(args) + 1}')))
-                args.append(query)
+                args.append(query_param)
 
         itgs.read_cursor.execute(*convert_numbered_args(query.get_sql(), args))
 
