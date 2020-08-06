@@ -147,13 +147,12 @@ def get_failure_response_or_user_id_and_perms_for_authorization(
 
     view_permission = None
     action_permission = None
-    if req_user_id is not None:
-        if req_user_id == user_id:
-            view_permission = VIEW_SELF_DEMOGRAPHICS_PERMISSION
-            action_permission = action_self_permission
-        else:
-            view_permission = VIEW_OTHERS_DEMOGRAPHICS_PERMISSION
-            action_permission = action_other_permission
+    if req_user_id == user_id:
+        view_permission = VIEW_SELF_DEMOGRAPHICS_PERMISSION
+        action_permission = action_self_permission
+    else:
+        view_permission = VIEW_OTHERS_DEMOGRAPHICS_PERMISSION
+        action_permission = action_other_permission
 
     check_permissions = []
     if view_permission is not None:
