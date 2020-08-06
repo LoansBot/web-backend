@@ -232,6 +232,8 @@ def get_failure_response_or_user_id_and_perms_for_authorization(
             req_username = row[0]
         else:
             req_username = f'<UNKNOWN:id={req_user_id}>'
+    else:
+        req_username = None
 
     itgs.logger.print(
         Level.DEBUG if user_id == req_user_id else Level.WARN,
