@@ -19,6 +19,7 @@ from lbshared.queries import convert_numbered_args
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 from pypika.functions import Now
+import itertools
 
 router = APIRouter()
 
@@ -316,12 +317,14 @@ def lookup(
             )
             .get_sql(),
             tuple(
-                (
-                    demo.user_id,
-                    user_id,
-                    lookup_id
+                itertools.chain.from_iterable(
+                    (
+                        demo.user_id,
+                        user_id,
+                        lookup_id
+                    )
+                    for demo in result
                 )
-                for demo in result
             )
         )
         itgs.write_conn.commit()
