@@ -336,7 +336,7 @@ def lookup(
             content=demographics_models.UserDemographicsLookup(
                 hits=result,
                 next_id=(last_id if have_more else None)
-            )
+            ).dict()
         )
 
 
