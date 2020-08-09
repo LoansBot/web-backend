@@ -6,6 +6,7 @@ from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
 from . import settings_models
 from . import helper
 from . import settings_helper
+import lbshared.user_settings as user_settings
 from .settings_helper import (
     ADD_SELF_AUTHENTICATION_METHODS_PERM,
     ADD_OTHERS_AUTHENTICATION_METHODS_PERM
@@ -432,7 +433,7 @@ def show_setting(
             if itgs.read_cursor.fetchone() is None:
                 return Response(status_code=404, headers=headers)
 
-        settings = settings_helper.get_settings(itgs, req_user_id)
+        settings = user_settings.get_settings(itgs, req_user_id)
 
         if setting_name == 'non-req-response-opt-out':
             setting = settings_models.UserSetting(
@@ -532,9 +533,9 @@ def update_non_req_response_opt_out(
             if not can_edit_others_standard_settings:
                 return Response(status_code=403, headers=headers)
 
-        changes = settings_helper.set_settings(
+        changes = user_settings.set_settings(
             itgs, req_user_id, non_req_response_opt_out=new_value.new_value)
-        settings_helper.create_settings_events(
+        user_settings.create_settings_events(
             itgs, req_user_id, user_id, changes, commit=True
         )
         return Response(status_code=200, headers=headers)
@@ -591,9 +592,9 @@ def update_borrower_req_pm_opt_out(
             if not can_edit_others_standard_settings:
                 return Response(status_code=403, headers=headers)
 
-        changes = settings_helper.set_settings(
+        changes = user_settings.set_settings(
             itgs, req_user_id, borrower_req_pm_opt_out=new_value.new_value)
-        settings_helper.create_settings_events(
+        user_settings.create_settings_events(
             itgs, req_user_id, user_id, changes, commit=True
         )
         return Response(status_code=200, headers=headers)
@@ -655,7 +656,7 @@ def update_ratelimit(
         elif not can_edit_self_ratelimit_settings:
             return Response(status_code=403, headers=headers)
 
-        changes = settings_helper.set_settings(
+        changes = user_settings.set_settings(
             itgs, req_user_id,
             global_ratelimit_applies=new_value.new_value.global_applies,
             user_specific_ratelimit=new_value.new_value.user_specific,
@@ -664,7 +665,7 @@ def update_ratelimit(
             ratelimit_refill_time_ms=new_value.new_value.refill_time_ms,
             ratelimit_strict=new_value.new_value.strict
         )
-        settings_helper.create_settings_events(
+        user_settings.create_settings_events(
             itgs, req_user_id, user_id, changes, commit=True
         )
         return Response(status_code=200, headers=headers)

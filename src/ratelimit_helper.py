@@ -2,7 +2,7 @@
 is not moderator-only should be ratelimited in some fashion.
 """
 import lbshared.ratelimits
-from users.settings_helper import get_settings
+from lbshared.user_settings import get_settings
 
 
 RATELIMIT_PERMISSIONS = tuple()
@@ -85,7 +85,7 @@ def check_ratelimit(itgs, user_id, permissions, cost, settings=None) -> bool:
     - `permissions (list[str])`: The list of permissions the user has; only
         the permissions in `RATELIMIT_PERMISSIONS` will be considered.
     - `cost (int)`: The amount toward their quota they are attempting to use.
-    - `settings (users.settings_helper.UserSettings, None)`: If the users
+    - `settings (lbshared.user_settings.UserSettings, None)`: If the users
         settings have already been fetched they can be included here to avoid
         unnecessarily duplicating the request. Otherwise this is None and the
         user settings will be fetched.
