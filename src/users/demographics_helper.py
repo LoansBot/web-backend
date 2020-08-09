@@ -4,8 +4,7 @@ from . import helper
 import ratelimit_helper
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lblogging import Level
-from pypika import Table, Query, Parameter, Interval
-from pypika.functions import Now
+from pypika import Table, Query, Parameter
 import os
 import secrets
 import json
