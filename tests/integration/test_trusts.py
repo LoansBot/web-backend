@@ -3,7 +3,7 @@ import unittest
 import requests
 import os
 import psycopg2
-from . import helper
+import helper
 import time
 
 
