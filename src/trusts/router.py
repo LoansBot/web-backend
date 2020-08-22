@@ -451,7 +451,7 @@ def upsert_loan_delay(item: TrustLoanDelay, authorization=Header(None)):
         )
 
         itgs.write_cursor.execute(
-            lbshared.queries.convert_numbered_args(
+            *lbshared.queries.convert_numbered_args(
                 'INSERT INTO trust_loan_delays '
                 '(user_id, loans_completed_as_lender, min_review_at) '
                 'VALUES ($1, $2, $3) '

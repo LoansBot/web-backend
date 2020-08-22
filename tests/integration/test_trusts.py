@@ -454,7 +454,7 @@ class TrustsTests(unittest.TestCase):
                 headers=headers
             )
             r.raise_for_status()
-            self.assertEqual(r.status_code, 200)
+            self.assertIn(r.status_code, [200, 201])
 
             body = r.json()
             self.assertIsInstance(body, dict)
