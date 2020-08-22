@@ -466,7 +466,7 @@ def upsert_loan_delay(item: TrustLoanDelay, authorization=Header(None)):
         )
 
         itgs.read_cursor.execute(
-            Query.from_(usrs).select(usrs.usrename)
+            Query.from_(usrs).select(usrs.username)
             .where(usrs.id == Parameter('%s'))
             .get_sql(),
             (user_id,)
