@@ -25,6 +25,7 @@ class TrustsTests(unittest.TestCase):
 
     def tearDown(self):
         self.cursor.execute('TRUNCATE users CASCADE')
+        self.cursor.execute('TRUNCATE delayed_queue CASCADE')
         self.conn.commit()
 
     def test_queue_gives_401(self):
@@ -138,10 +139,6 @@ class TrustsTests(unittest.TestCase):
             self.cursor.execute('SELECT 1 FROM users WHERE username=%s', ('Foobar',))
             row = self.cursor.fetchone()
             self.assertIsNone(row)
-
-            self.cursor.execute('SELECT 1 FROM trusts WHERE user_id=%s', (user_id,))
-            row = self.cursor.fetchone()
-            self.assertIsNotNone(row)
 
     def test_set_queue_time_401(self):
         r = requests.put(HOST + '/trusts/queue/1', json={
