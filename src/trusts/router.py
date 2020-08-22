@@ -1118,7 +1118,7 @@ def edit_trust_comment(
             comment_created_at,
             comment_updated_at
         ) = itgs.read_cursor.fetchone()
-        return Response(
+        return JSONResponse(
             status_code=200,
             headers=headers,
             content=UserTrustComment(
@@ -1249,6 +1249,18 @@ def upsert_trust_status(item: TrustStatus, authorization=Header(None)):
     if authorization is None:
         return Response(status_code=401)
 
+    if item.reason is None or len(item.reason.strip()) == 0:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['body', 'reason'],
+                    'msg': 'must not be blank',
+                    'type': 'value_error'
+                }
+            }
+        )
+
     request_cost = 25
     headers = {'x-request-cost': str(request_cost)}
     with LazyItgs(no_read_only=True) as itgs:
@@ -1292,6 +1304,12 @@ def upsert_trust_status(item: TrustStatus, authorization=Header(None)):
                         trusts.user_id, trusts.status, trusts.reason
                     ).insert(*[Parameter('%s') for _ in range(3)])
                     .returning(trusts.id)
+                    .get_sql(),
+                    (
+                        item.user_id,
+                        item.status,
+                        item.reason
+                    )
                 )
             except IntegrityError as ex:
                 if ex.pgcode == '23505':  # unique violation
