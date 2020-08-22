@@ -635,7 +635,7 @@ def show_loan_delay(req_user_id: int, authorization=Header(None)):
             headers=headers,
             content=TrustLoanDelayResponse(
                 loans_completed_as_lender=row[0],
-                min_review_at=row[1].timestamp()
+                review_no_earlier_than=row[1].timestamp()
             ).dict()
         )
 
