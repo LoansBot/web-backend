@@ -261,7 +261,7 @@ def show_trust_item(item_uuid: str, authorization=Header(None)):
             return Response(status_code=404, headers=headers)
 
         headers['cache-control'] = 'private, max-age=15'
-        return Response(
+        return JSONResponse(
             status_code=200,
             content=TrustQueueItem(
                 uuid=item_uuid,
@@ -351,7 +351,7 @@ def add_queue_item(item: TrustQueueItem, authorization=Header(None)):
             {'username': item.username.lower()},
             commit=True
         )
-        return Response(
+        return JSONResponse(
             status_code=200,
             content=TrustQueueItem(
                 uuid=uuid,
@@ -770,7 +770,7 @@ def index_trust_comments(
             ).where(
                 trust_comments.target_id == Parameter('%s')
             )
-            .orderby(trust_comments.created_at, getattr(Order, order))
+            .orderby(trust_comments.created_at, order=getattr(Order, order))
             .limit(limit + 1)
         )
         args = [target_user_id]
