@@ -460,7 +460,7 @@ def upsert_loan_delay(item: TrustLoanDelay, authorization=Header(None)):
                 (
                     target_user_id,
                     item.loans_completed_as_lender,
-                    min_review_at
+                    datetime.fromtimestamp(item.review_no_earlier_than)  # need unlocalized
                 )
             )
         )
