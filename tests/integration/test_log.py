@@ -9,7 +9,7 @@ import psycopg2
 HOST = os.environ['TEST_WEB_HOST']
 
 
-class BasicResponseTests(unittest.TestCase):
+class LogTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.conn = psycopg2.connect('')
