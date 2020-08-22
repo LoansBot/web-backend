@@ -101,6 +101,18 @@ jobs:
         DATABASE_USER: postgres
         DATABASE_PASSWORD: dev
         DATABASE_DBNAME: postgres
+    - name: Initialize arango
+      working-directory: ./working/src
+      run: |
+        python init_arango.py
+      env:
+        ARANGO_CLUSTER: http://localhost:${{ job.services.arangodb.ports['8529'] }}
+        ARANGO_AUTH: jwt
+        ARANGO_AUTH_CACHE: disk
+        ARANGO_AUTH_USERNAME: root
+        ARANGO_AUTH_PASSWORD: mango
+        ARANGO_TTL_SECONDS: 3600
+        ARANGO_DB: test
     - name: Boot up server
       working-directory: ./working/src
       run: |
