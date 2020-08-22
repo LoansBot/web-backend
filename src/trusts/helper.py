@@ -86,7 +86,7 @@ def create_server_trust_comment(itgs, comment, user_id=None, username=None):
             trust_comments.author_id,
             trust_comments.target_id,
             trust_comments.comment
-        ).values(*[Parameter('%s') for _ in range(3)])
+        ).insert(*[Parameter('%s') for _ in range(3)])
         .get_sql(),
         (loansbot_user_id, user_id, comment)
     )
