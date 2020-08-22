@@ -770,7 +770,7 @@ def index_trust_comments(
             ).where(
                 trust_comments.target_id == Parameter('%s')
             )
-            .order(trust_comments.created_at, getattr(Order, order))
+            .orderby(trust_comments.created_at, getattr(Order, order))
             .limit(limit + 1)
         )
         args = [target_user_id]
