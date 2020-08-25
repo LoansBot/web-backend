@@ -835,7 +835,8 @@ def index_trust_comments(
     responses={
         200: {'description': 'Success', 'model': UserTrustComment},
         401: {'description': 'Authorization missing'},
-        403: {'description': 'Authorization insufficient'}
+        403: {'description': 'Authorization insufficient'},
+        404: {'description': 'Comment does not exist'}
     }
 )
 def show_trust_comment(comment_id: int, authorization=Header(None)):
@@ -886,7 +887,7 @@ def show_trust_comment(comment_id: int, authorization=Header(None)):
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
-            return Response(status_code=403, headers=headers)
+            return Response(status_code=404, headers=headers)
 
         (
             comment_author_id,
