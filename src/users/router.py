@@ -399,9 +399,18 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
 
         if not helper.attempt_consume_claim_token(itgs, args.user_id, args.claim_token):
             return Response(status_code=403)
-        helper.create_or_update_human_password_auth(
+        (_, action) = helper.create_or_update_human_password_auth(
             itgs, args.user_id, args.password, commit=True
         )
+
+        if action == 'INSERT':
+            itgs.channel.exchange_declare('events', 'topic')
+            itgs.channel.basic_publish(
+                'events',
+                'user.signup',
+                json.dumps({'user_id': args.user_id})
+            )
+
     return Response(status_code=200)
 
 

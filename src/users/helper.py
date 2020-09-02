@@ -331,9 +331,16 @@ def attempt_consume_claim_token(
 
 
 def create_or_update_human_password_auth(
-        itgs: LazyIntegrations, user_id: int, passwd: str, commit=True) -> int:
+        itgs: LazyIntegrations, user_id: int, passwd: str, commit=True) -> tuple:
     """Creates or updates the human password authentication for the given
-    user. They are assigned no additional permissions."""
+    user. They are assigned no additional permissions.
+
+    Returns:
+    - `passauth_id (int)`: The id of the password authentication that was
+      updated.
+    - `action (str)`: Either the value 'UPDATE' or the value 'INSERT', which
+      explains what action just took place.
+    """
     hash_name = 'sha512'
     salt = secrets.token_urlsafe(23)  # 31 chars
     iterations = int(os.environ.get('HUMAN_PASSWORD_ITERS', '1000000'))
@@ -352,14 +359,14 @@ def create_or_update_human_password_auth(
         'VALUES(%s, %s, %s, %s, %s, %s)'
         'ON CONFLICT (user_id, human) WHERE human '
             'DO UPDATE SET hash_name=%s, hash=%s, salt=%s, iterations=%s'  # noqa: E131
-        'RETURNING id',
+        'RETURNING id, case when xmax::text::bigint > 0 then \'UPDATE\' else \'INSERT\' end',
         (user_id, True, hash_name, passwd_digest, salt, iterations,
          hash_name, passwd_digest, salt, iterations)
     )
-    (passauth_id,) = itgs.write_cursor.fetchone()
+    (passauth_id, action) = itgs.write_cursor.fetchone()
     if commit:
         itgs.write_conn.commit()
-    return passauth_id
+    return (passauth_id, action)
 
 
 def check_permission_on_authtoken(
