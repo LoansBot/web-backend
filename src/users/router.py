@@ -377,7 +377,7 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
             status_code=400,
             content=main_models.ErrorResponse(
                 message='Password must be more than 5 and less than 256 characters'
-            )
+            ).dict()
         )
 
     with LazyItgs(no_read_only=True) as itgs:
@@ -386,7 +386,7 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
                 status_code=403,
                 content=main_models.ErrorResponse(
                     message='Invalid captcha provided.'
-                )
+                ).dict()
             )
 
         if not security.ratelimit(
