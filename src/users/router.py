@@ -381,6 +381,14 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
         )
 
     with LazyItgs(no_read_only=True) as itgs:
+        if not security.verify_captcha(itgs, args.captcha):
+            return JSONResponse(
+                status_code=403,
+                content=main_models.ErrorResponse(
+                    message='Invalid captcha provided.'
+                )
+            )
+
         if not security.ratelimit(
                 itgs, 'MAX_USE_CLAIM_TOKEN', 'use_claim_token',
                 defaults={60: 5, 600: 30}):
