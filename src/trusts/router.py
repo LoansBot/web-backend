@@ -835,7 +835,8 @@ def index_trust_comments(
     responses={
         200: {'description': 'Success', 'model': UserTrustComment},
         401: {'description': 'Authorization missing'},
-        403: {'description': 'Authorization insufficient'}
+        403: {'description': 'Authorization insufficient'},
+        404: {'description': 'Comment does not exist'}
     }
 )
 def show_trust_comment(comment_id: int, authorization=Header(None)):
@@ -886,7 +887,7 @@ def show_trust_comment(comment_id: int, authorization=Header(None)):
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
-            return Response(status_code=403, headers=headers)
+            return Response(status_code=404, headers=headers)
 
         (
             comment_author_id,
@@ -1224,6 +1225,104 @@ def show_status(target_user_id: int, authorization=Header(None)):
                 user_id=target_user_id,
                 status=status,
                 reason=None
+            ).dict()
+        )
+
+
+@router.get(
+    '/{target_user_id}/private',
+    tags=['trusts'],
+    responses={
+        200: {'description': 'Success', 'model': TrustStatus},
+        401: {'description': 'Authorization missing'},
+        403: {'description': 'Authorization insufficient'},
+        404: {'description': 'No such user exists'}
+    }
+)
+def show_privileged_status(target_user_id: int, authorization=Header(None)):
+    """Show the trust status of a user, very similar to the standard
+    `GET /{target_user_id}` endpoint, except this strictly enforces auth and
+    will include the trust reason if you have access to it.
+
+    If the user is the authenticated user this requires the
+    `helper.VIEW_SELF_TRUST_PERMISSION` permission. If the user is a different
+    user this requires the `helper.VIEW_OTHERS_TRUST_PERMISSION`. In order to
+    view trust reasons this requires the `helper.VIEW_TRUST_REASON_PERMISSION`
+    permission. Is is encouraged that users which do not have the
+    `helper.VIEW_TRUST_REASON_PERMISSION` permission do not call this endpoint
+    and instead prefer the faster unprivileged version.
+
+    Arguments:
+    - `target_user_id (int)`: The id of the user whose trust status should be
+        returned.
+    - `authorization (str)`: The bearer token generated at login.
+    """
+    if authorization is None:
+        return Response(status_code=401)
+
+    request_cost = 5
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = users.helper.get_permissions_from_header(
+            itgs, authorization, (
+                *ratelimit_helper.RATELIMIT_PERMISSIONS,
+                helper.VIEW_SELF_TRUST_PERMISSION,
+                helper.VIEW_OTHERS_TRUST_PERMISSION,
+                helper.VIEW_TRUST_REASON_PERMISSION
+            )
+        )
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        if user_id is None:
+            return Response(status_code=403, headers=headers)
+
+        can_view_self_trust = helper.VIEW_SELF_TRUST_PERMISSION in perms
+        can_view_others_trust = helper.VIEW_OTHERS_TRUST_PERMISSION in perms
+        can_view_reason = helper.VIEW_TRUST_REASON_PERMISSION in perms
+        has_perm = (
+            (can_view_self_trust and user_id == target_user_id)
+            or (can_view_others_trust and user_id != target_user_id)
+        )
+        if not has_perm:
+            return Response(status_code=403, headers=headers)
+
+        if user_id != target_user_id:
+            usrs = Table('users')
+            itgs.read_cursor.execute(
+                Query.from_(usrs).select(1).where(usrs.id == Parameter('%s')).get_sql(),
+                (target_user_id,)
+            )
+            if itgs.read_cursor.fetchone() is None:
+                return Response(status_code=404, headers=headers)
+
+        trusts = Table('trusts')
+        itgs.read_cursor.execute(
+            Query.from_(trusts)
+            .select(trusts.status, trusts.reason)
+            .where(trusts.user_id == Parameter('%s'))
+            .get_sql(),
+            (target_user_id,)
+        )
+
+        row = itgs.read_cursor.fetchone()
+        if row is None:
+            status = 'unknown'
+            reason = None
+        else:
+            (status, reason) = row
+            if not can_view_reason:
+                reason = None
+
+        headers['Cache-Control'] = 'no-store'
+        return JSONResponse(
+            status_code=200,
+            headers=headers,
+            content=TrustStatus(
+                user_id=target_user_id,
+                status=status,
+                reason=reason
             ).dict()
         )
 

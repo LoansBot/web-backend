@@ -377,10 +377,18 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
             status_code=400,
             content=main_models.ErrorResponse(
                 message='Password must be more than 5 and less than 256 characters'
-            )
+            ).dict()
         )
 
     with LazyItgs(no_read_only=True) as itgs:
+        if not security.verify_captcha(itgs, args.captcha):
+            return JSONResponse(
+                status_code=403,
+                content=main_models.ErrorResponse(
+                    message='Invalid captcha provided.'
+                ).dict()
+            )
+
         if not security.ratelimit(
                 itgs, 'MAX_USE_CLAIM_TOKEN', 'use_claim_token',
                 defaults={60: 5, 600: 30}):
@@ -399,9 +407,18 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
 
         if not helper.attempt_consume_claim_token(itgs, args.user_id, args.claim_token):
             return Response(status_code=403)
-        helper.create_or_update_human_password_auth(
+        (_, action) = helper.create_or_update_human_password_auth(
             itgs, args.user_id, args.password, commit=True
         )
+
+        if action == 'INSERT':
+            itgs.channel.exchange_declare('events', 'topic')
+            itgs.channel.basic_publish(
+                'events',
+                'user.signup',
+                json.dumps({'user_id': args.user_id})
+            )
+
     return Response(status_code=200)
 
 

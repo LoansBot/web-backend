@@ -47,6 +47,7 @@ class ClaimArgs(BaseModel):
     user_id: int
     claim_token: str
     password: str
+    captcha: str
 
 
 class UserShowSelfResponse(BaseModel):

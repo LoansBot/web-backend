@@ -56,7 +56,7 @@ class AuthTests(unittest.TestCase):
                     'user_id': user_id,
                     'claim_token': 'testtoken',
                     'password': 'testpass',
-                    'captcha_token': 'notoken'
+                    'captcha': 'notoken'
                 }
             )
             r.raise_for_status()
@@ -227,7 +227,7 @@ class AuthTests(unittest.TestCase):
                     'user_id': user_id,
                     'claim_token': 'testtoken2',
                     'password': 'testpass',
-                    'captcha_token': 'notoken'
+                    'captcha': 'notoken'
                 }
             )
             self.assertNotEqual(200, r.status_code)
