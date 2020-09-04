@@ -56,7 +56,7 @@ class AuthTests(unittest.TestCase):
                     'user_id': user_id,
                     'claim_token': 'testtoken',
                     'password': 'testpass',
-                    'captcha_token': 'notoken'
+                    'captcha': 'notoken'
                 }
             )
             r.raise_for_status()
@@ -121,7 +121,7 @@ class AuthTests(unittest.TestCase):
                     'user_id': user_id,
                     'username': 'testuser',
                     'password': 'testpass',
-                    'captcha_token': 'notoken'
+                    'captcha': 'notoken'
                 }
             )
             r.raise_for_status()
@@ -227,7 +227,7 @@ class AuthTests(unittest.TestCase):
                     'user_id': user_id,
                     'claim_token': 'testtoken2',
                     'password': 'testpass',
-                    'captcha_token': 'notoken'
+                    'captcha': 'notoken'
                 }
             )
             self.assertNotEqual(200, r.status_code)
@@ -278,7 +278,7 @@ class AuthTests(unittest.TestCase):
                     'user_id': user_id,
                     'username': 'testuser',
                     'password': 'testpass2',
-                    'captcha_token': 'notoken'
+                    'captcha': 'notoken'
                 }
             )
             self.assertNotEqual(r.status_code, 200)
@@ -295,7 +295,7 @@ class AuthTests(unittest.TestCase):
                     'user_id': 1,
                     'username': 'testuser',
                     'password': 'test' * (256 // 4),
-                    'captcha_token': 'notoken'
+                    'captcha': 'notoken'
                 }
             )
             self.assertEqual(r.status_code, 400)
