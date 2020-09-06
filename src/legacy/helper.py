@@ -255,6 +255,9 @@ def try_handle_deprecated_call(
                         netloc=request.url.netloc,
                         slug=endpoint_slug
                     )
+                },
+                headers={
+                    'Cache-Control': 'no-store'
                 }
             )
 
