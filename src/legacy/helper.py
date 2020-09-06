@@ -115,7 +115,7 @@ def try_handle_deprecated_call(
 
     curtime = datetime.utcnow()
 
-    if curtime < deprecated_on:
+    if curtime.date() < deprecated_on:
         return None
 
     # 2pm UTC = 10am est = 7am pst
