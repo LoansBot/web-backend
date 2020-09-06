@@ -91,7 +91,8 @@ def try_handle_deprecated_call(
             'server': (request.headers['x-real-host'], 443),
             'root_path': '/api',
             'path': request.url.path,
-            'query_string': request.url.query
+            'query_string': request.url.query.encode('utf-8'),
+            'headers': {}
         }
     )
     ip_address = request.headers.get('x-real-ip', '')
