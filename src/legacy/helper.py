@@ -6,7 +6,7 @@ from lblogging import Level
 from pypika import PostgreSQLQuery as Query, Table, Parameter, Interval
 from pypika.functions import Count, Star, Now, Coalesce
 from lbshared.pypika_funcs import DateTrunc
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 SUNSETTED_HEADERS = {
     'Cache-Control': (
