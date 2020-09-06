@@ -170,7 +170,7 @@ def try_handle_deprecated_call(
         return None
 
     ip_address = request.client.host
-    user_agent = request.cookies['User-Agent']
+    user_agent = request.headers.get('user-agent', '')
 
     if user_id is not None:
         ip_address = None
