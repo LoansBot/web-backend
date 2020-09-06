@@ -30,7 +30,7 @@ app.include_router(permissions.router.router, prefix='/permissions')
 app.include_router(authentication_methods.router.router, prefix='/authentication_methods')
 app.include_router(loansbot.router.router, prefix='/loansbot')
 app.include_router(trusts.router.router, prefix='/trusts')
-app.include_router(legacy.router, tags=['legacy'])
+app.include_router(legacy.router.router, tags=['legacy'])
 
 
 @app.exception_handler(Exception)
