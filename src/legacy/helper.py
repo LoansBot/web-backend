@@ -169,7 +169,7 @@ def try_handle_deprecated_call(
         # This flag suppresses all behavior before sunset, including logging
         return None
 
-    ip_address = request.client.host
+    ip_address = request.headers.get('x-real-ip', '')
     user_agent = request.headers.get('user-agent', '')
 
     if user_id is not None:
