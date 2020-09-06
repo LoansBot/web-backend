@@ -246,12 +246,12 @@ def try_handle_deprecated_call(
                         'your requests. You may pass the query parameter `deprecated=true` '
                         'to suppress this behavior. We will only fail 5 requests per month '
                         'until it gets closer to the sunset date.\n\n'
-                        'Check {schema}://{netloc}/endpoints.html?slug={slug} for information '
+                        'Check {scheme}://{netloc}/endpoints.html?slug={slug} for information '
                         'about why this endpoint was deprecated and how to migrate.'
                     ).format(
                         deprecated_on=deprecated_on.strftime('%B %d, %Y'),
                         sunsets_on=sunsets_on.strftime('%B %d, %Y'),
-                        schema=request.url.schema,
+                        scheme=request.url.scheme,
                         netloc=request.url.netloc,
                         slug=endpoint_slug
                     )
