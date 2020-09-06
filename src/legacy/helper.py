@@ -85,7 +85,15 @@ def try_handle_deprecated_call(
     if row is None:
         return None
 
-    host = URL(request.headers.get('x-real-host'))
+    host = URL(
+        scope={
+            'scheme': 'https',
+            'server': (request.headers['x-real-host'], 443),
+            'root_path': '/api',
+            'path': request.url.path,
+            'query_string': request.url.query
+        }
+    )
     ip_address = request.headers.get('x-real-ip', '')
     user_agent = request.headers.get('user-agent', '')
 
