@@ -124,7 +124,7 @@ def try_handle_deprecated_call(
         14, tzinfo=curtime.tzinfo
     )
 
-    if curtime >= sunset_time + timedelta(months=1):
+    if curtime >= sunset_time + timedelta(days=31):
         # No logging, can't be suppressed, provides no info
         if request.method not in ('GET', 'HEAD'):
             return Response(
