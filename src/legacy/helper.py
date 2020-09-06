@@ -5,6 +5,7 @@ from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lblogging import Level
 from pypika import PostgreSQLQuery as Query, Table, Parameter, Interval
 from pypika.functions import Count, Star, Now, Coalesce
+from starlette.datastructures import URL
 from lbshared.pypika_funcs import DateTrunc
 from datetime import datetime, timedelta
 
@@ -83,6 +84,11 @@ def try_handle_deprecated_call(
     row = itgs.read_cursor.fetchone()
     if row is None:
         return None
+
+    host = URL(request.headers.get('x-real-host'))
+    ip_address = request.headers.get('x-real-ip', '')
+    user_agent = request.headers.get('user-agent', '')
+
     (
         endpoint_id,
         deprecated_on,
@@ -157,8 +163,8 @@ def try_handle_deprecated_call(
                 ).format(
                     deprecated_on.strftime('%B %d, %Y'),
                     sunsets_on.strftime('%B %d, %Y'),
-                    request.url.scheme,
-                    request.url.netloc,
+                    host.scheme,
+                    host.netloc,
                     endpoint_slug
                 )
             },
@@ -168,9 +174,6 @@ def try_handle_deprecated_call(
     if request.query_params.get('deprecated') == 'true':
         # This flag suppresses all behavior before sunset, including logging
         return None
-
-    ip_address = request.headers.get('x-real-ip', '')
-    user_agent = request.headers.get('user-agent', '')
 
     if user_id is not None:
         ip_address = None
@@ -195,13 +198,13 @@ def try_handle_deprecated_call(
                 ).format(
                     deprecated_on=deprecated_on.strftime('%B %d, %Y'),
                     sunsets_on=sunsets_on.strftime('%B %d, %Y'),
-                    scheme=request.url.scheme,
-                    netloc=request.url.netloc,
-                    path=request.url.path,
-                    query_params=request.url.query_params,
-                    opt_ambersand='' if request.url.query_params == '' else '&',
-                    opt_hashtag='' if request.url.fragment == '' else '#',
-                    fragment=request.url.fragment,
+                    scheme=host.scheme,
+                    netloc=host.netloc,
+                    path=host.path,
+                    query_params=host.query_params,
+                    opt_ambersand='' if host.query_params == '' else '&',
+                    opt_hashtag='' if host.fragment == '' else '#',
+                    fragment=host.fragment,
                     slug=endpoint_slug
                 )
             },
@@ -251,8 +254,8 @@ def try_handle_deprecated_call(
                     ).format(
                         deprecated_on=deprecated_on.strftime('%B %d, %Y'),
                         sunsets_on=sunsets_on.strftime('%B %d, %Y'),
-                        scheme=request.url.scheme,
-                        netloc=request.url.netloc,
+                        scheme=host.scheme,
+                        netloc=host.netloc,
                         slug=endpoint_slug
                     )
                 },
