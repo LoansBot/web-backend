@@ -113,7 +113,7 @@ def get_creation_info(loan_id: str, request: Request):
             )
             .where(
                 creation_infos.loan_id.isin(
-                    *[Parameter('%s') for _ in loan_ids]
+                    [Parameter('%s') for _ in loan_ids]
                 )
             )
             .get_sql(),
