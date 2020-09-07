@@ -341,7 +341,7 @@ class TrustsTests(unittest.TestCase):
         )
         self.conn.commit()
 
-        r = requests.get(HOST + 'endpoints/foobar/params/body?path=bar.baz&name=foo')
+        r = requests.get(HOST + '/endpoints/foobar/params/body?path=bar.baz&name=foo')
         r.raise_for_status()
         self.assertEqual(r.status_code, 200)
 

@@ -103,7 +103,7 @@ def index(before_slug: str = None, after_slug: str = None, order='asc',
         if limit > 0:
             query = query.limit(Parameter(next_arg_param(real_limit + 1)))
 
-        itgs.read_cursor.execute(*convert_numbered_args(query, num_args))
+        itgs.read_cursor.execute(*convert_numbered_args(query.get_sql(), num_args))
 
         result = []
         has_more = False
