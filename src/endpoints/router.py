@@ -98,7 +98,7 @@ def index(before_slug: str = None, after_slug: str = None, order='asc',
         if after_slug is not None:
             query = query.where(endpoints.slug > Parameter(next_arg_param(after_slug)))
 
-        query = query.orderby(endpoints.slug, getattr(Order, order))
+        query = query.orderby(endpoints.slug, order=getattr(Order, order))
 
         if limit > 0:
             query = query.limit(Parameter(next_arg_param(real_limit + 1)))

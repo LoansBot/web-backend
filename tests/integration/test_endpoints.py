@@ -286,7 +286,7 @@ class TrustsTests(unittest.TestCase):
         self.assertIsInstance(body, dict)
         self.assertEqual(body['slug'], 'foobar1')
         self.assertEqual(body['path'], '/foobar1')
-        self.assertEqual(body['markdown_description'], 'foobar')
+        self.assertEqual(body['description_markdown'], 'foobar')
         self.assertIsInstance(body['params'], list)
         self.assertEqual(len(body['params']), 1)
         param = body['params'][0]
