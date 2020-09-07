@@ -133,7 +133,7 @@ def index(before_slug: str = None, after_slug: str = None, order='asc',
         return JSONResponse(
             status_code=200,
             content=models.EndpointsIndexResponse(
-                endpoint_slgus=result,
+                endpoint_slugs=result,
                 after_slug=new_after_slug,
                 before_slug=new_before_slug
             ).dict(),
