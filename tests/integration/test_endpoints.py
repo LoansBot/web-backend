@@ -3,8 +3,6 @@ import unittest
 import requests
 import os
 import psycopg2
-import helper
-import time
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 
 
@@ -12,6 +10,7 @@ HOST = os.environ['TEST_WEB_HOST']
 endpoints = Table('endpoints')
 endpoint_params = Table('endpoint_params')
 endpoint_alts = Table('endpoint_alternatives')
+
 
 class TrustsTests(unittest.TestCase):
     @classmethod
