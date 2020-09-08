@@ -1,5 +1,6 @@
 """The models used for endpoints-related endpoints"""
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
+from datetime import date
 import typing
 
 
@@ -68,6 +69,7 @@ class EndpointShowResponse(BaseModel):
       endpoint. Example: `get_creation_info`
     - `path (str)`: The main path to reach this endpoint currently, for example
       `/api/get_creation_info.php`
+    - `verb (str)`: The HTTP verb used for this endpoint. For example, "GET"
     - `description_markdown (str)`: The markdown formatted description for this
       endpoint.
     - `params (list[EndpointParamShowResponse])`: The parameters to this
@@ -93,6 +95,7 @@ class EndpointShowResponse(BaseModel):
     """
     slug: str
     path: str
+    verb: str
     description_markdown: str
     params: typing.List[EndpointParamShowResponse]
     alternatives: typing.List[str]
@@ -126,10 +129,78 @@ class EndpointPutRequest(BaseModel):
 
     Arguments:
     - `path (str)`: The path that the endpoint can be accessed at
+    - `verb (str)`: The HTTP verb used with this endpoint, e.g., GET
     - `description_markdown (str)`: The new description for the endpoint.
+    - `deprecation_reason_markdown (str, None)`: The new reason for deprecating
+      this endpoint, if this endpoint is deprecated
+    - `deprecated_on (str, None)`: The new deprecation date for the endpoint, if
+      this endpoint is deprecated. ISO 8601 formatted date without time
+    - `sunsets_on (str, None)`: The new sunset date for this endpoint, if this
+      endpoint is deprecated. ISO 8601 formatted date without time
     """
     path: str
+    verb: str
     description_markdown: str
+    deprecation_reason_markdown: str = None
+    deprecated_on: str = None
+    sunsets_on: str = None
+
+    @validator('path')
+    def path_present(cls, v):
+        v = v.strip()
+        if len(v) < 1:
+            raise ValueError('must not be blank')
+        return v
+
+    @validator('verb')
+    def verb_is_allowed(cls, v):
+        if v not in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE'):
+            raise ValueError('must be uppercased http verb')
+        return v
+
+    @validator('description_markdown')
+    def description_present(cls, v):
+        v = v.strip()
+        if len(v) < 5:
+            raise ValueError('must be >5 chars stripped')
+        return v + '\n'
+
+    @validator('deprecation_reason_markdown')
+    def deprecation_reason_markdown_present_or_none(cls, v):
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) < 5:
+            raise ValueError('must be >5 chars stripped')
+        return v + '\n'
+
+    @validator('deprecated_on', 'sunsets_on')
+    def present_iff_reason_present(cls, v, values):
+        if (v is None) != (values.get('deprecation_reason_markdown') is None):
+            raise ValueError('present iff deprecation_reason_markdown present')
+        return v
+
+    @validator('deprecated_on', 'sunsets_on')
+    def iso_formatted_date_or_none(cls, v):
+        if v is None:
+            return v
+        parts = v.split('-', 2)
+        if len(parts) != 3:
+            raise ValueError('malformatted (too few hyphens)')
+        if len(parts[0]) != 4:
+            raise ValueError('malformatted (year not 4 chars)')
+        if len(parts[1]) != 2:
+            raise ValueError('malformatted (month not 2 chars)')
+        if len(parts[2]) != 2:
+            raise ValueError('malformatted (day not 2 chars)')
+        if not parts[0].isdigit():
+            raise ValueError('malformatted (year not numeric)')
+        if not parts[1].isdigit():
+            raise ValueError('malformatted (month not numeric)')
+        if not parts[2].isdigit():
+            raise ValueError('malformatted (day not numeric)')
+        date.fromisoformat(v)
+        return v
 
 
 class EndpointParamPutRequest(BaseModel):
@@ -145,9 +216,20 @@ class EndpointParamPutRequest(BaseModel):
     """
     var_type: str
     description_markdown: str
-    deprecation_reason_markdown: str = None
-    deprecated_on: str = None
-    sunsets_on: str = None
+
+    @validator('var_type')
+    def is_not_totally_blank(cls, v):
+        v = v.strip()
+        if len(v) < 1:
+            raise ValueError('must be at least 1 char')
+        return v
+
+    @validator('description_markdown')
+    def is_not_essentially_blank(cls, v):
+        v = v.strip()
+        if len(v) < 5:
+            raise ValueError('must be at least 5 chars')
+        return v + '\n'
 
 
 class EndpointAlternativePutRequest(BaseModel):
@@ -159,3 +241,10 @@ class EndpointAlternativePutRequest(BaseModel):
       old endpoint to this endpoint.
     """
     explanation_markdown: str
+
+    @validator('explanation_markdown')
+    def is_not_blank(cls, v):
+        v = v.strip()
+        if len(v) < 5:
+            raise ValueError('must be at least 5 chars')
+        return v + '\n'

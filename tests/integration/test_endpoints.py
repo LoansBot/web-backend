@@ -3,11 +3,13 @@ import unittest
 import requests
 import os
 import psycopg2
+import helper
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 
 
 HOST = os.environ['TEST_WEB_HOST']
 endpoints = Table('endpoints')
+ep_history = Table('endpoint_history')
 endpoint_params = Table('endpoint_params')
 endpoint_alts = Table('endpoint_alternatives')
 
@@ -226,22 +228,24 @@ class TrustsTests(unittest.TestCase):
             Query.into(endpoints).columns(
                 endpoints.slug,
                 endpoints.path,
+                endpoints.verb,
                 endpoints.description_markdown
             ).insert(*[Parameter('%s') for _ in range(3)])
             .returning(endpoints.id)
             .get_sql(),
-            ('foobar1', '/foobar1', 'foobar')
+            ('foobar1', '/foobar1', 'GET', 'foobar')
         )
         (endpoint_id,) = self.cursor.fetchone()
         self.cursor.execute(
             Query.into(endpoints).columns(
                 endpoints.slug,
                 endpoints.path,
+                endpoints.verb,
                 endpoints.description_markdown
             ).insert(*[Parameter('%s') for _ in range(3)])
             .returning(endpoints.id)
             .get_sql(),
-            ('foobar2', '/foobar2', 'foobar')
+            ('foobar2', '/foobar2', 'POST', 'foobar')
         )
         (new_endpoint_id,) = self.cursor.fetchone()
         self.cursor.execute(
@@ -286,6 +290,7 @@ class TrustsTests(unittest.TestCase):
         self.assertIsInstance(body, dict)
         self.assertEqual(body['slug'], 'foobar1')
         self.assertEqual(body['path'], '/foobar1')
+        self.assertEqual(body['verb'], 'POST')
         self.assertEqual(body['description_markdown'], 'foobar')
         self.assertIsInstance(body['params'], list)
         self.assertEqual(len(body['params']), 1)
@@ -405,3 +410,90 @@ class TrustsTests(unittest.TestCase):
         self.assertEqual(body['explanation_markdown'], 'To migrate foo the bar')
         self.assertIsInstance(body['created_at'], float)
         self.assertIsInstance(body['updated_at'], float)
+
+    def test_create_endpoint_200(self):
+        with helper.user_with_token(
+                self.conn, self.cursor, add_perms=['create-endpoint']) as (user_id, token):
+            r = requests.post(
+                HOST + '/endpoints/foobar',
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'bearer {token}'
+                },
+                json={
+                    'path': '/foobar',
+                    'verb': 'GET',
+                    'description_markdown': 'some text'
+                }
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            self.cursor.execute(
+                Query.from_(endpoints)
+                .select(1)
+                .where(endpoints.slug == Parameter('%s'))
+                .where(endpoints.path == Parameter('%s'))
+                .where(endpoints.verb == Parameter('%s'))
+                .where(endpoints.description_markdown == Parameter('%s'))
+                .where(endpoints.deprecation_reason_markdown.isnull())
+                .where(endpoints.deprecated_on.isnull())
+                .where(endpoints.sunsets_on.isnull())
+                .get_sql(),
+                ('foobar', '/foobar', 'GET', 'some text\n')
+            )
+            self.assertIsNotNone(self.cursor.fetchone())
+
+            self.cursor.execute(
+                Query.from_(ep_history)
+                .select(1)
+                .where(ep_history.user_id == Parameter('%s'))
+                .where(ep_history.slug == Parameter('%s'))
+                .where(ep_history.old_path.isnull())
+                .where(ep_history.new_path == Parameter('%s'))
+                .where(ep_history.old_verb.isnull())
+                .where(ep_history.new_verb == Parameter('%s'))
+                .where(ep_history.old_description_markdown.isnull())
+                .where(ep_history.new_description_markdown == Parameter('%s'))
+                .where(ep_history.old_deprecation_reason_markdown.isnull())
+                .where(ep_history.new_deprecation_reason_markdown.isnull())
+                .where(ep_history.old_deprecated_on.isnull())
+                .where(ep_history.new_deprecated_on.isnull())
+                .where(ep_history.old_sunsets_on.isnull())
+                .where(ep_history.new_sunsets_on.isnull())
+                .where(ep_history.old_in_endpoints.eq(False))
+                .where(ep_history.new_in_endpoints.eq(True))
+                .get_sql(),
+                (
+                    user_id,
+                    'foobar',
+                    '/foobar',
+                    'GET',
+                    'some text\n'
+                )
+            )
+            self.assertIsNotNone(self.cursor.fetchone())
+
+    def test_update_endpoint_200(self):
+        pass
+
+    def test_delete_endpoint_200(self):
+        pass
+
+    def test_create_endpoint_param_200(self):
+        pass
+
+    def test_update_endpoint_param_200(self):
+        pass
+
+    def test_delete_endpoint_param_200(self):
+        pass
+
+    def test_create_endpoint_alt_200(self):
+        pass
+
+    def test_update_endpoint_alt_200(self):
+        pass
+
+    def test_delete_endpoint_alt_200(self):
+        pass
