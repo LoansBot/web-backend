@@ -626,7 +626,7 @@ def put_endpoint(slug: str, endpoint: models.EndpointPutRequest, authorization=H
                 endpoint_history.new_sunsets_on,
                 endpoint_history.old_in_endpoints,
                 endpoint_history.new_in_endpoints
-            ).values(*[Parameter('%s') for _ in range(14)])
+            ).insert(*[Parameter('%s') for _ in range(14)])
             .get_sql(),
             (
                 user_id,
@@ -726,7 +726,7 @@ def put_endpoint(slug: str, endpoint: models.EndpointPutRequest, authorization=H
                         endpoints.deprecated_on,
                         endpoints.sunsets_on
                     )
-                    .values(*[Parameter('%s') for _ in range(7)])
+                    .insert(*[Parameter('%s') for _ in range(7)])
                     .get_sql(),
                     (
                         slug,

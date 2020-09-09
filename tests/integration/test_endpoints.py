@@ -4,6 +4,7 @@ import requests
 import os
 import psycopg2
 import helper
+from datetime import date
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 
 
@@ -290,7 +291,7 @@ class TrustsTests(unittest.TestCase):
         self.assertIsInstance(body, dict)
         self.assertEqual(body['slug'], 'foobar1')
         self.assertEqual(body['path'], '/foobar1')
-        self.assertEqual(body['verb'], 'POST')
+        self.assertEqual(body['verb'], 'GET')
         self.assertEqual(body['description_markdown'], 'foobar')
         self.assertIsInstance(body['params'], list)
         self.assertEqual(len(body['params']), 1)
@@ -475,7 +476,104 @@ class TrustsTests(unittest.TestCase):
             self.assertIsNotNone(self.cursor.fetchone())
 
     def test_update_endpoint_200(self):
-        pass
+        with helper.user_with_token(
+                self.conn, self.cursor, add_perms=['update-endpoint']) as (user_id, token):
+            self.cursor.execute(
+                Query.into(endpoints)
+                .columns(
+                    endpoints.slug,
+                    endpoints.path,
+                    endpoints.description_markdown,
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .get_sql(),
+                (
+                    'foobar',
+                    '/foobar',
+                    'description\n'
+                )
+            )
+            self.conn.commit()
+
+            r = requests.put(
+                HOST + '/endpoints/foobar',
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'bearer {token}'
+                },
+                json={
+                    'path': '/foobar',
+                    'verb': 'GET',
+                    'description_markdown': 'desc2',
+                    'deprecation_reason_markdown': 'deprecation reason',
+                    'deprecated_on': '2020-09-09',
+                    'sunsets_on': '2021-03-09'
+                }
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            self.cursor.execute(
+                Query.from_(endpoints)
+                .select(1)
+                .where(endpoints.slug == Parameter('%s'))
+                .where(endpoints.path == Parameter('%s'))
+                .where(endpoints.description_markdown == Parameter('%s'))
+                .where(endpoints.deprecation_reason_markdown == Parameter('%s'))
+                .where(endpoints.deprecated_on == Parameter('%s'))
+                .where(endpoints.sunsets_on == Parameter('%s'))
+                .get_sql(),
+                (
+                    'foobar',
+                    '/foobar',
+                    'desc2\n',
+                    'deprecation reason\n',
+                    date.fromisoformat('2020-09-09'),
+                    date.fromisoformat('2021-03-09')
+                )
+            )
+            self.assertIsNotNone(self.cursor.fetchone())
+
+            self.cursor.execute(
+                Query.from_(ep_history)
+                .select(1)
+                .where(ep_history.user_id == Parameter('%s'))
+                .where(ep_history.slug == Parameter('%s'))
+                .where(ep_history.old_path == Parameter('%s'))
+                .where(ep_history.new_path == Parameter('%s'))
+                .where(ep_history.old_description_markdown == Parameter('%s'))
+                .where(ep_history.new_description_markdown == Parameter('%s'))
+                .where(ep_history.old_deprecated_on == Parameter('%s'))
+                .where(ep_history.new_deprecated_on == Parameter('%s'))
+                .where(ep_history.old_sunsets_on == Parameter('%s'))
+                .where(ep_history.new_sunsets_on == Parameter('%s'))
+                .where(ep_history.old_in_endpoints == Parameter('%s'))
+                .where(ep_history.new_in_endpoints == Parameter('%s'))
+                .where(ep_history.old_verb == Parameter('%s'))
+                .where(ep_history.new_verb == Parameter('%s'))
+                .get_sql(),
+                (
+                    user_id,
+                    'foobar',
+                    '/foobar',
+                    '/foobar',
+                    'description\n',
+                    'desc2\n',
+                    None,
+                    date(2020, 9, 9),
+                    None,
+                    date(2021, 3, 9),
+                    True,
+                    True,
+                    'GET',
+                    'GET'
+                )
+            )
+            self.assertIsNotNone(self.cursor.fetchone())
+
+
+
+
 
     def test_delete_endpoint_200(self):
         pass
