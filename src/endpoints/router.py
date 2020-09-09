@@ -638,7 +638,7 @@ def put_endpoint(slug: str, endpoint: models.EndpointPutRequest, authorization=H
                 old_description_markdown,
                 endpoint.description_markdown,
                 old_deprecation_reason_markdown,
-                endpoint.description_markdown,
+                endpoint.deprecation_reason_markdown,
                 old_deprecated_on,
                 (
                     date.fromisoformat(endpoint.deprecated_on)
@@ -1308,6 +1308,8 @@ def destroy_endpoint(slug: str, authorization=Header(None)):
                 True,
                 False
             )
+            .join(old_endpoints).on(old_endpoints.id == endpoint_alts.old_endpoint_id)
+            .join(new_endpoints).on(new_endpoints.id == endpoint_alts.new_endpoint_id)
             .where(
                 (endpoint_alts.old_endpoint_id == Parameter('%s'))
                 | (endpoint_alts.new_endpoint_id == Parameter('%s'))
@@ -1532,7 +1534,8 @@ def destroy_endpoint_param(
         itgs.write_cursor.execute(
             Query.from_(endpoint_params)
             .delete()
-            .join(endpoints).on(endpoints.id == endpoint_params.endpoint_id)
+            .from_(endpoints)
+            .where(endpoints.id == endpoint_params.endpoint_id)
             .where(endpoints.slug == Parameter('%s'))
             .where(endpoint_params.location == Parameter('%s'))
             .where(endpoint_params.path == Parameter('%s'))

@@ -477,7 +477,7 @@ class EndpointsTests(unittest.TestCase):
                     'some text\n'
                 )
             )
-            self.assertIsNotNone(self.cursor.fetchone())
+            self.assertIsNotNone(self.cursor.fetchone(), helper.TableContents(self.cursor, 'endpoint_history'))
 
     def test_update_endpoint_200(self):
         with helper.user_with_token(
@@ -742,7 +742,7 @@ class EndpointsTests(unittest.TestCase):
                     user_id,
                     'foobar',
                     'query',
-                    '/foobar',
+                    '',
                     'baz',
                     None,
                     'str',
