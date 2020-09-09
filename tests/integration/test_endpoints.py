@@ -230,7 +230,7 @@ class TrustsTests(unittest.TestCase):
                 endpoints.path,
                 endpoints.verb,
                 endpoints.description_markdown
-            ).insert(*[Parameter('%s') for _ in range(3)])
+            ).insert(*[Parameter('%s') for _ in range(4)])
             .returning(endpoints.id)
             .get_sql(),
             ('foobar1', '/foobar1', 'GET', 'foobar')
@@ -242,7 +242,7 @@ class TrustsTests(unittest.TestCase):
                 endpoints.path,
                 endpoints.verb,
                 endpoints.description_markdown
-            ).insert(*[Parameter('%s') for _ in range(3)])
+            ).insert(*[Parameter('%s') for _ in range(4)])
             .returning(endpoints.id)
             .get_sql(),
             ('foobar2', '/foobar2', 'POST', 'foobar')
@@ -414,7 +414,7 @@ class TrustsTests(unittest.TestCase):
     def test_create_endpoint_200(self):
         with helper.user_with_token(
                 self.conn, self.cursor, add_perms=['create-endpoint']) as (user_id, token):
-            r = requests.post(
+            r = requests.put(
                 HOST + '/endpoints/foobar',
                 headers={
                     'Content-Type': 'application/json',
