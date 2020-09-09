@@ -31,6 +31,9 @@ class TrustsTests(unittest.TestCase):
     def tearDown(self):
         self.cursor.execute('TRUNCATE users CASCADE')
         self.cursor.execute('TRUNCATE endpoints CASCADE')
+        self.cursor.execute('TRUNCATE endpoint_history CASCADE')
+        self.cursor.execute('TRUNCATE endpoint_param_history CASCADE')
+        self.cursor.execute('TRUNCATE endpoint_alternative_history CASCADE')
         self.conn.commit()
 
     def test_blank_index_200(self):
@@ -571,12 +574,84 @@ class TrustsTests(unittest.TestCase):
             )
             self.assertIsNotNone(self.cursor.fetchone())
 
-
-
-
-
     def test_delete_endpoint_200(self):
-        pass
+        with helper.user_with_token(
+                self.conn, self.cursor, add_perms=['delete-endpoint']) as (user_id, token):
+            self.cursor.execute(
+                Query.into(endpoints)
+                .columns(
+                    endpoints.slug,
+                    endpoints.path,
+                    endpoints.description_markdown,
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .get_sql(),
+                (
+                    'foobar',
+                    '/foobar',
+                    'description\n'
+                )
+            )
+            self.conn.commit()
+
+            r = requests.delete(
+                f'{HOST}/endpoints/foobar',
+                headers={
+                    'Authorization': f'bearer {token}'
+                }
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            self.cursor.execute(
+                Query.from_(endpoints)
+                .select(1)
+                .where(endpoints.slug == Parameter('%s'))
+                .get_sql(),
+                'foobar'
+            )
+            self.assertIsNone(self.cursor.fetchone())
+
+            self.cursor.execute(
+                Query.from_(ep_history)
+                .select(1)
+                .where(ep_history.user_id == Parameter('%s'))
+                .where(ep_history.slug == Parameter('%s'))
+                .where(ep_history.old_path == Parameter('%s'))
+                .where(ep_history.new_path == Parameter('%s'))
+                .where(ep_history.old_description_markdown == Parameter('%s'))
+                .where(ep_history.new_description_markdown == Parameter('%s'))
+                .where(ep_history.old_deprecation_reason_markdown == Parameter('%s'))
+                .where(ep_history.new_deprecation_reason_markdown == Parameter('%s'))
+                .where(ep_history.old_deprecated_on == Parameter('%s'))
+                .where(ep_history.new_deprecated_on == Parameter('%s'))
+                .where(ep_history.old_sunsets_on == Parameter('%s'))
+                .where(ep_history.new_sunsets_on == Parameter('%s'))
+                .where(ep_history.old_in_endpoints == Parameter('%s'))
+                .where(ep_history.new_in_endpoints == Parameter('%s'))
+                .where(ep_history.old_verb == Parameter('%s'))
+                .where(ep_history.new_verb == Parameter('%s'))
+                .get_sql(),
+                (
+                    user_id,
+                    'foobar',
+                    '/foobar',
+                    '/foobar',
+                    'description\n',
+                    'description\n',
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    True,
+                    False,
+                    'GET',
+                    'GET'
+                )
+            )
+            self.assertIsNotNone(self.cursor.fetchone())
 
     def test_create_endpoint_param_200(self):
         pass
