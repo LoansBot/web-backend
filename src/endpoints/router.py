@@ -1221,6 +1221,7 @@ def destroy_endpoint(slug: str, authorization=Header(None)):
             )
             .where(endpoints.slug == Parameter('%s'))
             .returning(1)
+            .get_sql(),
             (user_id, slug)
         )
         row = itgs.read_cursor.fetchone()
