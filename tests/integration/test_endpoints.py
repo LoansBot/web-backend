@@ -16,7 +16,7 @@ ep_param_history = Table('endpoint_param_history')
 endpoint_alts = Table('endpoint_alternatives')
 
 
-class TrustsTests(unittest.TestCase):
+class EndpointsTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.conn = psycopg2.connect('')
@@ -687,7 +687,7 @@ class TrustsTests(unittest.TestCase):
                 },
                 json={
                     'var_type': 'str',
-                    'description_markdown': 'Baz'
+                    'description_markdown': 'Baz the str'
                 }
             )
             self.assertEqual(r.status_code, 200, r.content.decode('utf-8'))
@@ -708,7 +708,7 @@ class TrustsTests(unittest.TestCase):
                     '',
                     'baz',
                     'str',
-                    'Baz\n'
+                    'Baz the str\n'
                 )
             )
             self.assertIsNotNone(self.cursor.fetchone())
@@ -737,7 +737,7 @@ class TrustsTests(unittest.TestCase):
                     None,
                     'str',
                     None,
-                    'Baz\n',
+                    'Baz the str\n',
                     False,
                     True
                 )
@@ -755,7 +755,7 @@ class TrustsTests(unittest.TestCase):
                     endpoints.verb,
                     endpoints.description_markdown,
                 )
-                .insert(*[Parameter('%s') for _ in range(3)])
+                .insert(*[Parameter('%s') for _ in range(4)])
                 .returning(endpoints.id)
                 .get_sql(),
                 (
@@ -861,7 +861,107 @@ class TrustsTests(unittest.TestCase):
             self.assertIsNotNone(self.cursor.fetchone())
 
     def test_delete_endpoint_param_200(self):
-        pass
+        with helper.user_with_token(
+                self.conn, self.cursor, add_perms=['update-endpoint']) as (user_id, token):
+            self.cursor.execute(
+                Query.into(endpoints)
+                .columns(
+                    endpoints.slug,
+                    endpoints.path,
+                    endpoints.description_markdown,
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .returning(endpoints.id)
+                .get_sql(),
+                (
+                    'foobar',
+                    '/foobar',
+                    'description\n'
+                )
+            )
+            (endpoint_id,) = self.cursor.fetchone()
+
+            self.cursor.execute(
+                Query.into(endpoint_params)
+                .columns(
+                    endpoint_params.endpoint_id,
+                    endpoint_params.location,
+                    endpoint_params.path,
+                    endpoint_params.name,
+                    endpoint_params.var_type,
+                    endpoint_params.description_markdown
+                )
+                .insert(*[Parameter('%s') for _ in range(6)])
+                .get_sql(),
+                (
+                    endpoint_id,
+                    'header',
+                    '',
+                    'baz',
+                    'str, None',
+                    'The baz if buzz\n'
+                )
+            )
+            self.conn.commit()
+
+            r = requests.delete(
+                f'{HOST}/endpoints/foobar/params/header',
+                params={
+                    'name': 'baz'
+                },
+                headers={
+                    'Authorization': f'bearer {token}'
+                }
+            )
+            self.assertEqual(r.status_code, 200, r.content.decode('utf-8'))
+
+            self.cursor.execute(
+                Query.from_(endpoint_params)
+                .select(1)
+                .where(endpoint_params.endpoint_id == Parameter('%s'))
+                .where(endpoint_params.location == Parameter('%s'))
+                .where(endpoint_params.path == Parameter('%s'))
+                .where(endpoint_params.name == Parameter('%s'))
+                .get_sql(),
+                (
+                    endpoint_id,
+                    'header',
+                    '',
+                    'baz'
+                )
+            )
+            self.assertIsNone(self.cursor.fetchone())
+
+            self.cursor.execute(
+                Query.from_(ep_param_history)
+                .select(1)
+                .where(ep_param_history.user_id == Parameter('%s'))
+                .where(ep_param_history.endpoint_slug == Parameter('%s'))
+                .where(ep_param_history.location == Parameter('%s'))
+                .where(ep_param_history.path == Parameter('%s'))
+                .where(ep_param_history.name == Parameter('%s'))
+                .where(ep_param_history.old_var_type == Parameter('%s'))
+                .where(ep_param_history.new_var_type == Parameter('%s'))
+                .where(ep_param_history.old_description_markdown == Parameter('%s'))
+                .where(ep_param_history.new_description_markdown == Parameter('%s'))
+                .where(ep_param_history.old_in_endpoint_params == Parameter('%s'))
+                .where(ep_param_history.new_in_endpoint_params == Parameter('%s'))
+                .get_sql(),
+                (
+                    user_id,
+                    'foobar',
+                    'header',
+                    '',
+                    'baz',
+                    'str, None',
+                    'str, None',
+                    'The baz if buzz\n',
+                    'The baz if buzz\n',
+                    True,
+                    False
+                )
+            )
+            self.assertIsNotNone(self.cursor.fetchone())
 
     def test_create_endpoint_alt_200(self):
         pass
@@ -871,3 +971,7 @@ class TrustsTests(unittest.TestCase):
 
     def test_delete_endpoint_alt_200(self):
         pass
+
+
+if __name__ == '__main__':
+    unittest.main()
