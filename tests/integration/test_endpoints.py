@@ -547,6 +547,8 @@ class EndpointsTests(unittest.TestCase):
                 .where(ep_history.new_path == Parameter('%s'))
                 .where(ep_history.old_description_markdown == Parameter('%s'))
                 .where(ep_history.new_description_markdown == Parameter('%s'))
+                .where(ep_history.old_deprecation_reason_markdown == Parameter('%s'))
+                .where(ep_history.new_deprecation_reason_markdown == Parameter('%s'))
                 .where(ep_history.old_deprecated_on == Parameter('%s'))
                 .where(ep_history.new_deprecated_on == Parameter('%s'))
                 .where(ep_history.old_sunsets_on == Parameter('%s'))
@@ -564,6 +566,8 @@ class EndpointsTests(unittest.TestCase):
                     'description\n',
                     'desc2\n',
                     None,
+                    'deprecation reason\n',
+                    None,
                     date(2020, 9, 9),
                     None,
                     date(2021, 3, 9),
@@ -573,7 +577,10 @@ class EndpointsTests(unittest.TestCase):
                     'GET'
                 )
             )
-            self.assertIsNotNone(self.cursor.fetchone())
+            self.assertIsNotNone(
+                self.cursor.fetchone(),
+                helper.TableContents(self.cursor, 'endpoint_history')
+            )
 
     def test_delete_endpoint_200(self):
         with helper.user_with_token(
@@ -652,7 +659,10 @@ class EndpointsTests(unittest.TestCase):
                     'GET'
                 )
             )
-            self.assertIsNotNone(self.cursor.fetchone())
+            self.assertIsNotNone(
+                self.cursor.fetchone(),
+                helper.TableContents(self.cursor, 'endpoint_history')
+            )
 
     def test_create_endpoint_param_200(self):
         with helper.user_with_token(
@@ -742,7 +752,10 @@ class EndpointsTests(unittest.TestCase):
                     True
                 )
             )
-            self.assertIsNotNone(self.cursor.fetchone())
+            self.assertIsNotNone(
+                self.cursor.fetchone(),
+                helper.TableContents(self.cursor, 'endpoint_param_history')
+            )
 
     def test_update_endpoint_param_200(self):
         with helper.user_with_token(
@@ -858,7 +871,10 @@ class EndpointsTests(unittest.TestCase):
                     True
                 )
             )
-            self.assertIsNotNone(self.cursor.fetchone())
+            self.assertIsNotNone(
+                self.cursor.fetchone(),
+                helper.TableContents(self.cursor, 'endpoint_param_history')
+            )
 
     def test_delete_endpoint_param_200(self):
         with helper.user_with_token(
@@ -961,7 +977,10 @@ class EndpointsTests(unittest.TestCase):
                     False
                 )
             )
-            self.assertIsNotNone(self.cursor.fetchone())
+            self.assertIsNotNone(
+                self.cursor.fetchone(),
+                helper.TableContents(self.cursor, 'endpoint_param_history')
+            )
 
     def test_create_endpoint_alt_200(self):
         pass

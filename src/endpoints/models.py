@@ -162,7 +162,7 @@ class EndpointPutRequest(BaseModel):
     def description_present(cls, v):
         v = v.strip()
         if len(v) < 5:
-            raise ValueError('must be >5 chars stripped')
+            raise ValueError('must be >=5 chars stripped')
         return v + '\n'
 
     @validator('deprecation_reason_markdown')
@@ -171,7 +171,7 @@ class EndpointPutRequest(BaseModel):
             return v
         v = v.strip()
         if len(v) < 5:
-            raise ValueError('must be >5 chars stripped')
+            raise ValueError('must be >=5 chars stripped')
         return v + '\n'
 
     @validator('deprecated_on', 'sunsets_on')
