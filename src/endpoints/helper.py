@@ -10,5 +10,5 @@ UPDATE_ENDPOINT_PERMISSION = 'update-endpoint'
 """Permission required to update existing endpoints"""
 
 
-DELETE_ENDPOINT_PERMISSION = 'delete-permission'
+DELETE_ENDPOINT_PERMISSION = 'delete-endpoint'
 """Permission required to delete endpoints"""

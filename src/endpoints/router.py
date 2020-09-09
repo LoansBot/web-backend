@@ -626,7 +626,7 @@ def put_endpoint(slug: str, endpoint: models.EndpointPutRequest, authorization=H
                 endpoint_history.new_sunsets_on,
                 endpoint_history.old_in_endpoints,
                 endpoint_history.new_in_endpoints
-            ).insert(*[Parameter('%s') for _ in range(14)])
+            ).insert(*[Parameter('%s') for _ in range(16)])
             .get_sql(),
             (
                 user_id,

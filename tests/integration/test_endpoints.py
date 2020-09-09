@@ -12,6 +12,7 @@ HOST = os.environ['TEST_WEB_HOST']
 endpoints = Table('endpoints')
 ep_history = Table('endpoint_history')
 endpoint_params = Table('endpoint_params')
+ep_param_history = Table('endpoint_param_history')
 endpoint_alts = Table('endpoint_alternatives')
 
 
@@ -654,7 +655,95 @@ class TrustsTests(unittest.TestCase):
             self.assertIsNotNone(self.cursor.fetchone())
 
     def test_create_endpoint_param_200(self):
-        pass
+        with helper.user_with_token(
+                self.conn, self.cursor, add_perms=['update-endpoint']) as (user_id, token):
+            self.cursor.execute(
+                Query.into(endpoints)
+                .columns(
+                    endpoints.slug,
+                    endpoints.path,
+                    endpoints.description_markdown,
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .returning(endpoints.id)
+                .get_sql(),
+                (
+                    'foobar',
+                    '/foobar',
+                    'description\n'
+                )
+            )
+            (endpoint_id,) = self.cursor.fetchone()
+            self.conn.commit()
+
+            r = requests.put(
+                f'{HOST}/endpoints/foobar/params/query',
+                params={
+                    'name': 'baz'
+                },
+                headers={
+                    'Authorization': f'bearer {token}',
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'var_type': 'str',
+                    'description_markdown': 'Baz'
+                }
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            self.cursor.execute(
+                Query.from_(endpoint_params)
+                .select(1)
+                .where(endpoint_params.endpoint_id == Parameter('%s'))
+                .where(endpoint_params.location == Parameter('%s'))
+                .where(endpoint_params.path == Parameter('%s'))
+                .where(endpoint_params.name == Parameter('%s'))
+                .where(endpoint_params.var_type == Parameter('%s'))
+                .where(endpoint_params.description_markdown == Parameter('%s'))
+                .get_sql(),
+                (
+                    endpoint_id,
+                    'query',
+                    '',
+                    'baz',
+                    'str',
+                    'Baz\n'
+                )
+            )
+            self.assertIsNotNone(self.cursor.fetchone())
+
+            self.cursor.execute(
+                Query.from_(ep_param_history)
+                .select(1)
+                .where(ep_param_history.user_id == Parameter('%s'))
+                .where(ep_param_history.endpoint_slug == Parameter('%s'))
+                .where(ep_param_history.location == Parameter('%s'))
+                .where(ep_param_history.path == Parameter('%s'))
+                .where(ep_param_history.name == Parameter('%s'))
+                .where(ep_param_history.old_var_type == Parameter('%s'))
+                .where(ep_param_history.new_var_type == Parameter('%s'))
+                .where(ep_param_history.old_description_markdown == Parameter('%s'))
+                .where(ep_param_history.new_description_markdown == Parameter('%s'))
+                .where(ep_param_history.old_in_endpoint_params == Parameter('%s'))
+                .where(ep_param_history.new_in_endpoint_params == Parameter('%s'))
+                .get_sql(),
+                (
+                    user_id,
+                    'foobar',
+                    'query',
+                    '/foobar',
+                    'baz',
+                    None,
+                    'str',
+                    None,
+                    'Baz\n',
+                    False,
+                    True
+                )
+            )
+            self.assertIsNotNone(self.cursor.fetchone())
 
     def test_update_endpoint_param_200(self):
         pass
