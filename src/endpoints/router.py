@@ -1304,8 +1304,8 @@ def destroy_endpoint(slug: str, authorization=Header(None)):
                 Parameter('%s'),
                 old_endpoints.slug,
                 new_endpoints.slug,
-                ep_alt_history.explanation_markdown,
-                ep_alt_history.explanation_markdown,
+                endpoint_alts.explanation_markdown,
+                endpoint_alts.explanation_markdown,
                 True,
                 False
             )
