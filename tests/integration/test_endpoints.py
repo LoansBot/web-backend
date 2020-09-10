@@ -620,7 +620,7 @@ class EndpointsTests(unittest.TestCase):
                 .select(1)
                 .where(endpoints.slug == Parameter('%s'))
                 .get_sql(),
-                'foobar'
+                ('foobar',)
             )
             self.assertIsNone(self.cursor.fetchone())
 
@@ -758,13 +758,15 @@ class EndpointsTests(unittest.TestCase):
             )
             self.assertIsNotNone(
                 self.cursor.fetchone(),
-                helper.TableContents(self.cursor, 'endpoint_param_history'),
-                (
-                    'expected [(any, {user_id}, \'foobar\', \'query\', \'\', '
-                    '\'baz\', None, \'str\', None, \'Baz the str\\n\', False, True, any)]'
-                    '; got {table_contents}'
-                ),
-                user_id=user_id
+                helper.TableContents(
+                    self.cursor, 'endpoint_param_history',
+                    (
+                        'expected [(any, {user_id}, \'foobar\', \'query\', \'\', '
+                        '\'baz\', None, \'str\', None, \'Baz the str\\n\', False, True, any)]'
+                        '; got {table_contents}'
+                    ),
+                    user_id=user_id
+                )
             )
 
     def test_update_endpoint_param_200(self):
@@ -1032,7 +1034,7 @@ class EndpointsTests(unittest.TestCase):
             self.conn.commit()
 
             r = requests.put(
-                f'{HOST}/migrate/endpoint1/endpoint2',
+                f'{HOST}/endpoints/migrate/endpoint1/endpoint2',
                 headers={
                     'Content-Type': 'application/json',
                     'Authorization': f'bearer {token}'
@@ -1098,14 +1100,136 @@ class EndpointsTests(unittest.TestCase):
                     'endpoint_alternative_history',
                     (
                         'expected [(any, {user_id}, \'endpoint1\', \'endpoint2\', '
-                        'None, \'elephant\\n\', False, True)]; got {table_contents}'
+                        'None, \'elephant\\n\', False, True, any)]; got {table_contents}'
                     ),
                     user_id=user_id
                 )
             )
 
     def test_update_endpoint_alt_200(self):
-        pass
+        with helper.user_with_token(
+                self.conn, self.cursor, add_perms=['update-endpoint']) as (user_id, token):
+            self.cursor.execute(
+                Query.into(endpoints)
+                .columns(
+                    endpoints.slug,
+                    endpoints.path,
+                    endpoints.description_markdown,
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .returning(endpoints.id)
+                .get_sql(),
+                (
+                    'endpoint1',
+                    '/one',
+                    'description\n'
+                )
+            )
+            (endpoint_one_id,) = self.cursor.fetchone()
+            self.cursor.execute(
+                Query.into(endpoints)
+                .columns(
+                    endpoints.slug,
+                    endpoints.path,
+                    endpoints.description_markdown,
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .returning(endpoints.id)
+                .get_sql(),
+                (
+                    'endpoint2',
+                    '/two',
+                    'description\n'
+                )
+            )
+            (endpoint_two_id,) = self.cursor.fetchone()
+            self.cursor.execute(
+                Query.into(endpoint_alts)
+                .columns(
+                    endpoint_alts.old_endpoint_id,
+                    endpoint_alts.new_endpoint_id,
+                    endpoint_alts.explanation_markdown
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .get_sql(),
+                (
+                    endpoint_one_id,
+                    endpoint_two_id,
+                    'freezer\n'
+                )
+            )
+            self.conn.commit()
+
+            r = requests.put(
+                f'{HOST}/endpoints/migrate/endpoint1/endpoint2',
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'bearer {token}'
+                },
+                json={
+                    'explanation_markdown': 'elephant'
+                }
+            )
+            self.cursor.execute(
+                Query.from_(endpoint_alts)
+                .select(1)
+                .where(endpoint_alts.old_endpoint_id == Parameter('%s'))
+                .where(endpoint_alts.new_endpoint_id == Parameter('%s'))
+                .where(endpoint_alts.explanation_markdown == Parameter('%s'))
+                .get_sql(),
+                (
+                    endpoint_one_id,
+                    endpoint_two_id,
+                    'elephant\n'
+                )
+            )
+            self.assertIsNotNone(
+                self.cursor.fetchone(),
+                helper.TableContents(
+                    self.cursor,
+                    'endpoint_alternatives',
+                    (
+                        'expected [(any, {endpoint_one_id}, {endpoint_two_id}, '
+                        '\'elephant\\n\', any, any)]; got {table_contents}'
+                    ),
+                    endpoint_one_id=endpoint_one_id,
+                    endpoint_two_id=endpoint_two_id
+                )
+            )
+
+            self.cursor.execute(
+                Query.from_(ep_alt_history)
+                .select(1)
+                .where(ep_alt_history.user_id == Parameter('%s'))
+                .where(ep_alt_history.old_endpoint_slug == Parameter('%s'))
+                .where(ep_alt_history.new_endpoint_slug == Parameter('%s'))
+                .where(ep_alt_history.old_explanation_markdown == Parameter('%s'))
+                .where(ep_alt_history.new_explanation_markdown == Parameter('%s'))
+                .where(ep_alt_history.old_in_endpoint_alternatives == Parameter('%s'))
+                .where(ep_alt_history.new_in_endpoint_alternatives == Parameter('%s'))
+                .get_sql(),
+                (
+                    user_id,
+                    'endpoint1',
+                    'endpoint2',
+                    'freezer\n',
+                    'elephant\n',
+                    True,
+                    True
+                )
+            )
+            self.assertIsNotNone(
+                self.cursor.fetchone(),
+                helper.TableContents(
+                    self.cursor,
+                    'endpoint_alternative_history',
+                    (
+                        'expected [(any, {user_id}, \'endpoint1\', \'endpoint2\', '
+                        '\'freezer\\n\', \'elephant\\n\', True, True, any)]; got {table_contents}'
+                    ),
+                    user_id=user_id
+                )
+            )
 
     def test_delete_endpoint_alt_200(self):
         pass
