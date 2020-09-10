@@ -86,6 +86,10 @@ The following guidelines apply to automated traffic:
   load, whereas I might have allocated more resources for you if I had more
   context. I will not attempt to automatically load the page, so feel free to
   style the page / make it look nice.
+- You MUST NOT change your user agent in an automated and frequent basis which
+  does not require human intervention, such as by including the timestamp when
+  the bot was launched. This does not include incrementing your version when
+  the source code changes.
 - You MUST use non-human authentication methods for authenticated automated
   traffic. See src/users/API.md
 - You MUST NOT mask automated traffic as human traffic. Traffic masking
@@ -132,6 +136,19 @@ The following guidelines apply to automated traffic:
   4 requests, you could easily do list loan ids -> check each one. Checking all
   the loan ids in this case is done in parallel, whereas in the earlier example
   you needed to wait for the responses of 4 chained requests before continuing.
+- You SHOULD check 400 Bad Request responses to see if the body is present and
+  include it in your logs. You MAY attempt to parse the body as JSON if it is
+  present. If you do so you MAY check for the boolean `retryable`. If it has the
+  value `true` you MUST still treat the request as a client-side error for
+  back-off. If it has the value `false` the request will definitely not succeed
+  without modification and you MAY cache the response. You MAY check for the
+  additional boolean values `deprecated` and `sunsetted`. If `deprecated` is
+  `true` and `sunsetted` is `false` you MAY automatically append the
+  `deprecated=true` query parameter. If `sunsetted` is `true` the request will
+  not succeed and you MAY cache the response. You SHOULD alert the program
+  maintainer to visit the "Developer" -> "Endpoints" section of the website to
+  see the deprecation schedule for the endpoint, the reason for deprecation, and
+  how to migrate.
 
 
 ## Backoff Algorithm

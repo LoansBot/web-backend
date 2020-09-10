@@ -4,6 +4,33 @@ from pypika import PostgreSQLQuery as Query, Table, Parameter, Interval
 from pypika.functions import Now
 
 
+class TableContents:
+    """A simple class that when stringified fetches the contents of a table.
+    Useful for assert* functions that were based on queries
+
+    Attributes:
+    - `cursor (psycopg2.cursor)`: The cursor to use to fetch the contents
+      of the table
+    - `table (str)`: The name of the table whose contents are fetched when
+      stringified
+    - `fmt (str)`: The format string passed "table_contents" as a keyword
+      plus any other kwargs specified.
+    - `kwargs (dict)`: Additional kwargs passed to the format string
+    """
+    def __init__(self, cursor, table, fmt='{table_contents}', **kwargs):
+        self.cursor = cursor
+        self.table = table
+        self.fmt = fmt
+        self.kwargs = kwargs
+
+    def __str__(self):
+        self.cursor.execute(f'SELECT * FROM {self.table}')
+        return self.fmt.format(
+            table_contents=self.cursor.fetchall(),
+            **self.kwargs
+        )
+
+
 @contextmanager
 def clear_tables(conn, cursor, tbls):
     """truncates each of the given tables at the end of the block"""
