@@ -6,6 +6,7 @@ from fastapi import APIRouter, Header
 from fastapi.responses import Response, JSONResponse
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lbshared.queries import convert_numbered_args
+from lbshared.pypika_crits import ExistsCriterion as exists
 from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
 from pypika.functions import Now
 from psycopg2 import IntegrityError
@@ -1422,13 +1423,20 @@ def destroy_endpoint_alternative(
             itgs.write_conn.rollback()
             return Response(status_code=429, headers=headers)
 
+        ep_alts_outer = endpoint_alts.as_('endpoint_alternatives_outer')
         itgs.write_cursor.execute(
-            Query.from_(endpoint_alts)
+            Query.from_(ep_alts_outer)
             .delete()
-            .join(old_endpoints).on(old_endpoints.id == endpoint_alts.old_endpoint_id)
-            .join(new_endpoints).on(new_endpoints.id == endpoint_alts.new_endpoint_id)
-            .where(old_endpoints.slug == Parameter('%s'))
-            .where(new_endpoints.slug == Parameter('%s'))
+            .where(
+                exists(
+                    Query.from_(endpoint_alts)
+                    .join(old_endpoints).on(old_endpoints.id == endpoint_alts.old_endpoint_id)
+                    .join(new_endpoints).on(new_endpoints.id == endpoint_alts.new_endpoint_id)
+                    .where(endpoint_alts.id == ep_alts_outer.id)
+                    .where(old_endpoints.slug == Parameter('%s'))
+                    .where(new_endpoints.slug == Parameter('%s'))
+                )
+            )
             .get_sql(),
             (from_endpoint_slug, to_endpoint_slug)
         )
@@ -1531,15 +1539,21 @@ def destroy_endpoint_param(
             itgs.write_conn.rollback()
             return Response(status_code=429, headers=headers)
 
+        inner_ep_params = endpoint_params.as_('inner_endpoint_params')
         itgs.write_cursor.execute(
             Query.from_(endpoint_params)
             .delete()
-            .from_(endpoints)
-            .where(endpoints.id == endpoint_params.endpoint_id)
-            .where(endpoints.slug == Parameter('%s'))
-            .where(endpoint_params.location == Parameter('%s'))
-            .where(endpoint_params.path == Parameter('%s'))
-            .where(endpoint_params.name == Parameter('%s'))
+            .where(
+                exists(
+                    Query.from_(inner_ep_params)
+                    .join(endpoints).on(endpoints.id == inner_ep_params.endpoint_id)
+                    .where(inner_ep_params.id == endpoint_params.id)
+                    .where(endpoints.slug == Parameter('%s'))
+                    .where(inner_ep_params.location == Parameter('%s'))
+                    .where(inner_ep_params.path == Parameter('%s'))
+                    .where(inner_ep_params.name == Parameter('%s'))
+                )
+            )
             .get_sql(),
             (endpoint_slug, location, path, name)
         )

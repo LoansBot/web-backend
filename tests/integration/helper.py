@@ -13,14 +13,22 @@ class TableContents:
       of the table
     - `table (str)`: The name of the table whose contents are fetched when
       stringified
+    - `fmt (str)`: The format string passed "table_contents" as a keyword
+      plus any other kwargs specified.
+    - `kwargs (dict)`: Additional kwargs passed to the format string
     """
-    def __init__(self, cursor, table):
+    def __init__(self, cursor, table, fmt='{table_contents}', **kwargs):
         self.cursor = cursor
         self.table = table
+        self.fmt = fmt
+        self.kwargs = kwargs
 
     def __str__(self):
         self.cursor.execute(f'SELECT * FROM {self.table}')
-        return str(self.cursor.fetchall())
+        return self.fmt.format(
+            table_contents=self.cursor.fetchall(),
+            **self.kwargs
+        )
 
 
 @contextmanager

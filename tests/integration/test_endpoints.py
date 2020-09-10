@@ -754,7 +754,13 @@ class EndpointsTests(unittest.TestCase):
             )
             self.assertIsNotNone(
                 self.cursor.fetchone(),
-                helper.TableContents(self.cursor, 'endpoint_param_history')
+                helper.TableContents(self.cursor, 'endpoint_param_history'),
+                (
+                    'expected [(any, {user_id}, \'foobar\', \'query\', \'\', '
+                    '\'baz\', None, \'str\', None, \'Baz the str\\n\', False, True, any)]'
+                    '; got {table_contents}'
+                ),
+                user_id=user_id
             )
 
     def test_update_endpoint_param_200(self):
