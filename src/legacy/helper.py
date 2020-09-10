@@ -112,7 +112,8 @@ def try_handle_deprecated_call(
             Level.WARN,
             'The endpoint slug {} is deprecated but does not have a sunset '
             'date set! This should not happen; the maximum sunsetting time '
-            'of 36 months will be assigned'
+            'of 36 months will be assigned',
+            endpoint_slug
         )
         itgs.write_cursor.execute(
             Query.update(endpoints)
