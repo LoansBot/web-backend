@@ -551,11 +551,11 @@ class EndpointsTests(unittest.TestCase):
                 .where(ep_history.new_path == Parameter('%s'))
                 .where(ep_history.old_description_markdown == Parameter('%s'))
                 .where(ep_history.new_description_markdown == Parameter('%s'))
-                .where(ep_history.old_deprecation_reason_markdown == Parameter('%s'))
+                .where(ep_history.old_deprecation_reason_markdown.isnull())
                 .where(ep_history.new_deprecation_reason_markdown == Parameter('%s'))
-                .where(ep_history.old_deprecated_on == Parameter('%s'))
+                .where(ep_history.old_deprecated_on.isnull())
                 .where(ep_history.new_deprecated_on == Parameter('%s'))
-                .where(ep_history.old_sunsets_on == Parameter('%s'))
+                .where(ep_history.old_sunsets_on.isnull())
                 .where(ep_history.new_sunsets_on == Parameter('%s'))
                 .where(ep_history.old_in_endpoints == Parameter('%s'))
                 .where(ep_history.new_in_endpoints == Parameter('%s'))
@@ -569,11 +569,8 @@ class EndpointsTests(unittest.TestCase):
                     '/foobar',
                     'description\n',
                     'desc2\n',
-                    None,
                     'deprecation reason\n',
-                    None,
                     date(2020, 9, 9),
-                    None,
                     date(2021, 3, 9),
                     True,
                     True,
@@ -633,12 +630,12 @@ class EndpointsTests(unittest.TestCase):
                 .where(ep_history.new_path == Parameter('%s'))
                 .where(ep_history.old_description_markdown == Parameter('%s'))
                 .where(ep_history.new_description_markdown == Parameter('%s'))
-                .where(ep_history.old_deprecation_reason_markdown == Parameter('%s'))
-                .where(ep_history.new_deprecation_reason_markdown == Parameter('%s'))
-                .where(ep_history.old_deprecated_on == Parameter('%s'))
-                .where(ep_history.new_deprecated_on == Parameter('%s'))
-                .where(ep_history.old_sunsets_on == Parameter('%s'))
-                .where(ep_history.new_sunsets_on == Parameter('%s'))
+                .where(ep_history.old_deprecation_reason_markdown.isnull())
+                .where(ep_history.new_deprecation_reason_markdown.isnull())
+                .where(ep_history.old_deprecated_on.isnull())
+                .where(ep_history.new_deprecated_on.isnull())
+                .where(ep_history.old_sunsets_on.isnull())
+                .where(ep_history.new_sunsets_on.isnull())
                 .where(ep_history.old_in_endpoints == Parameter('%s'))
                 .where(ep_history.new_in_endpoints == Parameter('%s'))
                 .where(ep_history.old_verb == Parameter('%s'))
@@ -651,12 +648,6 @@ class EndpointsTests(unittest.TestCase):
                     '/foobar',
                     'description\n',
                     'description\n',
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
                     True,
                     False,
                     'GET',
@@ -735,9 +726,9 @@ class EndpointsTests(unittest.TestCase):
                 .where(ep_param_history.location == Parameter('%s'))
                 .where(ep_param_history.path == Parameter('%s'))
                 .where(ep_param_history.name == Parameter('%s'))
-                .where(ep_param_history.old_var_type == Parameter('%s'))
+                .where(ep_param_history.old_var_typ.isnull())
                 .where(ep_param_history.new_var_type == Parameter('%s'))
-                .where(ep_param_history.old_description_markdown == Parameter('%s'))
+                .where(ep_param_history.old_description_markdown.isnull())
                 .where(ep_param_history.new_description_markdown == Parameter('%s'))
                 .where(ep_param_history.old_in_endpoint_params == Parameter('%s'))
                 .where(ep_param_history.new_in_endpoint_params == Parameter('%s'))
@@ -748,9 +739,7 @@ class EndpointsTests(unittest.TestCase):
                     'query',
                     '',
                     'baz',
-                    None,
                     'str',
-                    None,
                     'Baz the str\n',
                     False,
                     True
@@ -1078,7 +1067,7 @@ class EndpointsTests(unittest.TestCase):
                 .where(ep_alt_history.user_id == Parameter('%s'))
                 .where(ep_alt_history.old_endpoint_slug == Parameter('%s'))
                 .where(ep_alt_history.new_endpoint_slug == Parameter('%s'))
-                .where(ep_alt_history.old_explanation_markdown == Parameter('%s'))
+                .where(ep_alt_history.old_explanation_markdown.isnull())
                 .where(ep_alt_history.new_explanation_markdown == Parameter('%s'))
                 .where(ep_alt_history.old_in_endpoint_alternatives == Parameter('%s'))
                 .where(ep_alt_history.new_in_endpoint_alternatives == Parameter('%s'))
@@ -1087,7 +1076,6 @@ class EndpointsTests(unittest.TestCase):
                     user_id,
                     'endpoint1',
                     'endpoint2',
-                    None,
                     'elephant\n',
                     False,
                     True
