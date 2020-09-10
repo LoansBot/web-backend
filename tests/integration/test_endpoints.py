@@ -726,7 +726,7 @@ class EndpointsTests(unittest.TestCase):
                 .where(ep_param_history.location == Parameter('%s'))
                 .where(ep_param_history.path == Parameter('%s'))
                 .where(ep_param_history.name == Parameter('%s'))
-                .where(ep_param_history.old_var_typ.isnull())
+                .where(ep_param_history.old_var_type.isnull())
                 .where(ep_param_history.new_var_type == Parameter('%s'))
                 .where(ep_param_history.old_description_markdown.isnull())
                 .where(ep_param_history.new_description_markdown == Parameter('%s'))
@@ -1222,7 +1222,116 @@ class EndpointsTests(unittest.TestCase):
             )
 
     def test_delete_endpoint_alt_200(self):
-        pass
+        with helper.user_with_token(
+                self.conn, self.cursor, add_perms=['update-endpoint']) as (user_id, token):
+            self.cursor.execute(
+                Query.into(endpoints)
+                .columns(
+                    endpoints.slug,
+                    endpoints.path,
+                    endpoints.description_markdown,
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .returning(endpoints.id)
+                .get_sql(),
+                (
+                    'endpoint1',
+                    '/one',
+                    'description\n'
+                )
+            )
+            (endpoint_one_id,) = self.cursor.fetchone()
+            self.cursor.execute(
+                Query.into(endpoints)
+                .columns(
+                    endpoints.slug,
+                    endpoints.path,
+                    endpoints.description_markdown,
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .returning(endpoints.id)
+                .get_sql(),
+                (
+                    'endpoint2',
+                    '/two',
+                    'description\n'
+                )
+            )
+            (endpoint_two_id,) = self.cursor.fetchone()
+            self.cursor.execute(
+                Query.into(endpoint_alts)
+                .columns(
+                    endpoint_alts.old_endpoint_id,
+                    endpoint_alts.new_endpoint_id,
+                    endpoint_alts.explanation_markdown
+                )
+                .insert(*[Parameter('%s') for _ in range(3)])
+                .get_sql(),
+                (
+                    endpoint_one_id,
+                    endpoint_two_id,
+                    'freezer\n'
+                )
+            )
+            self.conn.commit()
+
+            r = requests.delete(
+                f'{HOST}/endpoints/migrate/endpoint1/endpoint2',
+                headers={
+                    'Authorization': f'bearer {token}'
+                }
+            )
+            self.assertEqual(r.status_code, 200, r.content)
+
+            self.cursor.execute(
+                Query.from_(endpoint_alts)
+                .select(1)
+                .where(endpoint_alts.old_endpoint_id == Parameter('%s'))
+                .where(endpoint_alts.new_endpoint_id == Parameter('%s'))
+                .get_sql(),
+                (
+                    endpoint_one_id,
+                    endpoint_two_id
+                )
+            )
+            self.assertIsNone(
+                self.cursor.fetchone(),
+                helper.TableContents(self.cursor, 'endpoint_alternatives')
+            )
+
+            self.cursor.execute(
+                Query.from_(ep_alt_history)
+                .select(1)
+                .where(ep_alt_history.user_id == Parameter('%s'))
+                .where(ep_alt_history.old_endpoint_slug == Parameter('%s'))
+                .where(ep_alt_history.new_endpoint_slug == Parameter('%s'))
+                .where(ep_alt_history.old_explanation_markdown == Parameter('%s'))
+                .where(ep_alt_history.new_explanation_markdown == Parameter('%s'))
+                .where(ep_alt_history.old_in_endpoint_alternatives == Parameter('%s'))
+                .where(ep_alt_history.new_in_endpoint_alternatives == Parameter('%s'))
+                .get_sql(),
+                (
+                    user_id,
+                    'endpoint1',
+                    'endpoint2',
+                    'freezer\n',
+                    'freezer\n',
+                    True,
+                    False
+                )
+            )
+            self.assertIsNotNone(
+                self.cursor.fetchone(),
+                helper.TableContents(
+                    self.cursor,
+                    'endpoint_alternative_history',
+                    (
+                        'expected [(any, {user_id}, \'endpoint1\', \'endpoint2\', '
+                        '\'freezer\\n\', \'freezer\\n\', True, False, any)]; got {table_contents}'
+                    ),
+                    user_id=user_id
+                )
+            )
 
 
 if __name__ == '__main__':

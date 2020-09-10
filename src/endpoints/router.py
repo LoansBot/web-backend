@@ -905,7 +905,7 @@ def put_endpoint_alternative(
                         endpoint_alternatives.new_endpoint_id,
                         endpoint_alternatives.explanation_markdown
                     )
-                    .insert(*[Parameter('%s') for _ in range(4)])
+                    .insert(*[Parameter('%s') for _ in range(3)])
                     .returning(endpoint_alternatives.id)
                     .get_sql(),
                     (
