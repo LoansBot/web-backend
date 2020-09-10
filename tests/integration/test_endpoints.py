@@ -1158,6 +1158,8 @@ class EndpointsTests(unittest.TestCase):
                     'explanation_markdown': 'elephant'
                 }
             )
+            self.assertEqual(r.status_code, 200, r.content)
+
             self.cursor.execute(
                 Query.from_(endpoint_alts)
                 .select(1)
