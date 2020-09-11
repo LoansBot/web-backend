@@ -3,6 +3,7 @@ is not moderator-only should be ratelimited in some fashion.
 """
 import lbshared.ratelimits
 from lbshared.user_settings import get_settings
+from fastapi import Request
 
 
 RATELIMIT_PERMISSIONS = tuple()
@@ -133,3 +134,41 @@ def check_ratelimit(itgs, user_id, permissions, cost, settings=None) -> bool:
             lbshared.ratelimits.consume(itgs, GLOBAL_RATELIMITS, 'global', 1)
 
     return acceptable
+
+
+def is_cache_bust(request: Request, params=frozenset()):
+    """Determines if the given request appears to include headers that bust
+    the cache. For endpoints which are expensive to perform but are generally
+    cached at the reverse proxy level, we don't want to excessively punish users
+    who happen to have a cache miss. However, we do want to punish users who are
+    excessively busting the cache.
+
+    Hence a common pattern is
+
+    ```
+    request_cost = 25 if ratelimit_helper.is_cache_bust(request) else 1
+    ```
+
+    This pattern only makes sense if every query parameter is enumerated and
+    _aggressively_ checked, i.e., doing something like `foo=a` and `foo=a+`
+    will break through the cache.
+
+    Arguments:
+    - `request (Request)`: The request to check for cache-busting headers
+    - `params (frozenset)`: The acceptable query parameters. Any query parameter
+      not in this list is treated as a cache bust.
+
+    Returns:
+    - True if the request is altering how we cache in some way, false otherwise
+    """
+    if request.headers.get('pragma') is not None:
+        return True
+
+    if request.headers.get('cache-control') is not None:
+        return True
+
+    for param in request.query_params:
+        if param not in params:
+            return True
+
+    return False
