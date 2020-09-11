@@ -261,6 +261,11 @@ def show(slug: str, request: Request, authorization=Header(None)):
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
+            # the frontend uses this for checking slugs; theres no
+            # reason this 404 response can't be cached
+            headers['Cache-Control'] = (
+                'public, max-age=86400, stale-while-revalidate=86400, stale-if-error=604800'
+            )
             return Response(status_code=404, headers=headers)
 
         (
