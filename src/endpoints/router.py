@@ -263,6 +263,9 @@ def show(slug: str, request: Request, authorization=Header(None)):
         if row is None:
             # the frontend uses this for checking slugs; theres no
             # reason this 404 response can't be cached
+
+            # Nginx weirdness: Nginx WILL respect this header on 404s, but it
+            # will not set the x-cache-status header.
             headers['Cache-Control'] = (
                 'public, max-age=86400, stale-while-revalidate=86400, stale-if-error=604800'
             )
