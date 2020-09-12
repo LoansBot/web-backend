@@ -330,7 +330,7 @@ class EndpointsTests(unittest.TestCase):
             .get_sql(),
             (
                 'foobar1', '/foobar1', 'GET', 'foobar',
-                'deprecated', date(2020, 9, 12),
+                'deprecated\n', date(2020, 9, 12),
                 date(2021, 3, 12)
             )
         )
