@@ -315,6 +315,44 @@ class EndpointsTests(unittest.TestCase):
         self.assertIsInstance(body['created_at'], float)
         self.assertIsInstance(body['updated_at'], float)
 
+    def test_show_deprecated_endpoint_200(self):
+        self.cursor.execute(
+            Query.into(endpoints).columns(
+                endpoints.slug,
+                endpoints.path,
+                endpoints.verb,
+                endpoints.description_markdown,
+                endpoints.deprecation_reason_markdown,
+                endpoints.deprecated_on,
+                endpoints.sunsets_on
+            ).insert(*[Parameter('%s') for _ in range(7)])
+            .returning(endpoints.id)
+            .get_sql(),
+            (
+                'foobar1', '/foobar1', 'GET', 'foobar',
+                'deprecated\n', date(2020, 9, 12),
+                date(2021, 3, 12)
+            )
+        )
+        self.conn.commit()
+
+        r = requests.get(f'{HOST}/endpoints/foobar1')
+        self.assertEqual(r.status_code, 200)
+
+        body = r.json()
+        self.assertIsInstance(body, dict)
+        self.assertEqual(body['slug'], 'foobar1')
+        self.assertEqual(body['path'], '/foobar1')
+        self.assertEqual(body['verb'], 'GET')
+        self.assertEqual(body['description_markdown'], 'foobar')
+        self.assertEqual(body['params'], [])
+        self.assertEqual(body['alternatives'], [])
+        self.assertEqual(body.get('deprecation_reason_markdown'), 'deprecated\n')
+        self.assertEqual(body.get('deprecated_on'), '2020-09-12')
+        self.assertEqual(body.get('sunsets_on'), '2021-03-12')
+        self.assertIsInstance(body['created_at'], float)
+        self.assertIsInstance(body['updated_at'], float)
+
     def test_show_param_404(self):
         r = requests.get(HOST + '/endpoints/foobar/params/query')
         self.assertEqual(r.status_code, 404)

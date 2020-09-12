@@ -2,7 +2,7 @@
 documenting endpoints for this purpose is not automated, however it's made
 less painful by having some form of an interface.
 """
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, Request
 from fastapi.responses import Response, JSONResponse
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lbshared.queries import convert_numbered_args
@@ -220,7 +220,7 @@ def suggest(q: str = '', limit: int = 3, authorization=Header(None)):
         '404': {'description': 'No endpoint with that slug exists'}
     }
 )
-def show(slug: str, authorization=Header(None)):
+def show(slug: str, request: Request, authorization=Header(None)):
     """Fetch the description for the endpoint with the given slug. This is
     aggressively cached; the front-end should include a way to bust the cache
     (e.g. a refresh button).
@@ -230,7 +230,8 @@ def show(slug: str, authorization=Header(None)):
     - `authorization (str, None)`: If specified this should be the bearer
       token generated at login.
     """
-    request_cost = 25
+    request_cost = 25 if ratelimit_helper.is_cache_bust(request) else 1
+
     headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = users.helper.get_permissions_from_header(
@@ -260,6 +261,14 @@ def show(slug: str, authorization=Header(None)):
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
+            # the frontend uses this for checking slugs; theres no
+            # reason this 404 response can't be cached
+
+            # Nginx weirdness: Nginx WILL respect this header on 404s, but it
+            # will not set the x-cache-status header.
+            headers['Cache-Control'] = (
+                'public, max-age=86400, stale-while-revalidate=86400, stale-if-error=604800'
+            )
             return Response(status_code=404, headers=headers)
 
         (
@@ -335,8 +344,16 @@ def show(slug: str, authorization=Header(None)):
                 params=params_result,
                 alternatives=alts_result,
                 deprecation_reason_markdown=endpoint_deprecation_reason_markdown,
-                deprecated_on=endpoint_deprecated_on,
-                sunsets_on=endpoint_sunsets_on,
+                deprecated_on=(
+                    endpoint_deprecated_on.isoformat()
+                    if endpoint_deprecated_on is not None
+                    else None
+                ),
+                sunsets_on=(
+                    endpoint_sunsets_on.isoformat()
+                    if endpoint_sunsets_on is not None
+                    else None
+                ),
                 created_at=endpoint_created_at.timestamp(),
                 updated_at=endpoint_updated_at.timestamp()
             ).dict(),
@@ -377,7 +394,7 @@ def show_param(endpoint_slug: str, location: str, path: str = '', name: str = ''
     - `authorization (str, None)`: If provided this should be the bearer token
       generated at login.
     """
-    request_cost = 1
+    request_cost = 3
     headers = {'x-request-cost': str(request_cost)}
 
     with LazyItgs() as itgs:
@@ -450,7 +467,7 @@ def show_param(endpoint_slug: str, location: str, path: str = '', name: str = ''
     }
 )
 def show_alternative(from_endpoint_slug: str, to_endpoint_slug: str,
-                     authorization=Header(None)):
+                     request: Request, authorization=Header(None)):
     """Provides details on how to migrate undirectionally between the given
     endpoints. The existence of an alternative can be discovered through the
     endpoint show endpoint.
@@ -462,7 +479,7 @@ def show_alternative(from_endpoint_slug: str, to_endpoint_slug: str,
     - `authorization (str, None)`: If provided, this should be the bearer token
       generated at login.
     """
-    request_cost = 1
+    request_cost = 5 if ratelimit_helper.is_cache_bust(request) else 1
     headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = users.helper.get_permissions_from_header(
