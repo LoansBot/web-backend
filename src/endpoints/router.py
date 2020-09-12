@@ -312,7 +312,7 @@ def show(slug: str, request: Request, authorization=Header(None)):
             params_result.append(
                 models.EndpointParamShowResponse(
                     location=param_location,
-                    path=param_path.split('.'),
+                    path=param_path and param_path.split('.') or [],
                     name=param_name,
                     var_type=param_var_type,
                     added_date=param_added_date.isoformat()
@@ -444,7 +444,7 @@ def show_param(endpoint_slug: str, location: str, path: str = '', name: str = ''
             status_code=200,
             content=models.EndpointParamShowResponse(
                 location=location,
-                path=path.split('.'),
+                path=path and path.split('.') or [],
                 name=name,
                 var_type=param_var_type,
                 description_markdown=param_description_markdown,
