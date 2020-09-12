@@ -344,8 +344,16 @@ def show(slug: str, request: Request, authorization=Header(None)):
                 params=params_result,
                 alternatives=alts_result,
                 deprecation_reason_markdown=endpoint_deprecation_reason_markdown,
-                deprecated_on=endpoint_deprecated_on,
-                sunsets_on=endpoint_sunsets_on,
+                deprecated_on=(
+                    endpoint_deprecated_on.isoformat()
+                    if endpoint_deprecated_on is not None
+                    else None
+                ),
+                sunsets_on=(
+                    endpoint_sunsets_on.isoformat()
+                    if endpoint_sunsets_on is not None
+                    else None
+                ),
                 created_at=endpoint_created_at.timestamp(),
                 updated_at=endpoint_updated_at.timestamp()
             ).dict(),
