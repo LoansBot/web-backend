@@ -803,6 +803,18 @@ def put_endpoint_alternative(
     if authorization is None:
         return Response(status_code=401)
 
+    if from_endpoint_slug == to_endpoint_slug:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['to_endpoint_slug'],
+                    'msg': 'Must be different from from_endpoint_slug',
+                    'type': 'value_error'
+                }
+            }
+        )
+
     request_cost = 25
     headers = {'x-request-cost': str(request_cost)}
     with LazyItgs(no_read_only=True) as itgs:
