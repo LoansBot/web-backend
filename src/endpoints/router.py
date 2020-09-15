@@ -312,7 +312,7 @@ def show(slug: str, request: Request, authorization=Header(None)):
             params_result.append(
                 models.EndpointParamShowResponse(
                     location=param_location,
-                    path=param_path.split('.'),
+                    path=param_path and param_path.split('.') or [],
                     name=param_name,
                     var_type=param_var_type,
                     added_date=param_added_date.isoformat()
@@ -444,7 +444,7 @@ def show_param(endpoint_slug: str, location: str, path: str = '', name: str = ''
             status_code=200,
             content=models.EndpointParamShowResponse(
                 location=location,
-                path=path.split('.'),
+                path=path and path.split('.') or [],
                 name=name,
                 var_type=param_var_type,
                 description_markdown=param_description_markdown,
@@ -802,6 +802,18 @@ def put_endpoint_alternative(
     """
     if authorization is None:
         return Response(status_code=401)
+
+    if from_endpoint_slug == to_endpoint_slug:
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['to_endpoint_slug'],
+                    'msg': 'Must be different from from_endpoint_slug',
+                    'type': 'value_error'
+                }
+            }
+        )
 
     request_cost = 25
     headers = {'x-request-cost': str(request_cost)}
