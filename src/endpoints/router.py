@@ -133,7 +133,7 @@ def index(before_slug: str = None, after_slug: str = None, order='asc',
                 new_after_slug = result[-1]
 
         headers['Cache-Control'] = (
-            'public, max-age=60, stale-while-revalidate=540'
+            'public, max-age=60, stale-while-revalidate=540, stale-if-error=86400'
         )
         return JSONResponse(
             status_code=200,
@@ -267,7 +267,7 @@ def show(slug: str, request: Request, authorization=Header(None)):
             # Nginx weirdness: Nginx WILL respect this header on 404s, but it
             # will not set the x-cache-status header.
             headers['Cache-Control'] = (
-                'public, max-age=86400, stale-while-revalidate=86400'
+                'public, max-age=86400, stale-while-revalidate=86400, stale-if-error=604800'
             )
             return Response(status_code=404, headers=headers)
 
@@ -332,7 +332,7 @@ def show(slug: str, request: Request, authorization=Header(None)):
         alts_result = [row[0] for row in itgs.read_cursor.fetchall()]
 
         headers['Cache-Control'] = (
-            'public, max-age=86400, stale-while-revalidate=86400'
+            'public, max-age=86400, stale-while-revalidate=86400, stale-if-error=604800'
         )
         return JSONResponse(
             status_code=200,
@@ -438,7 +438,7 @@ def show_param(endpoint_slug: str, location: str, path: str = '', name: str = ''
         ) = row
 
         headers['Cache-Control'] = (
-            'public, max-age=86400, stale-while-revalidate=86400'
+            'public, max-age=86400, stale-while-revalidate=86400, stale-if-error=604800'
         )
         return JSONResponse(
             status_code=200,
@@ -520,7 +520,7 @@ def show_alternative(from_endpoint_slug: str, to_endpoint_slug: str,
             alt_updated_at
         ) = row
         headers['Cache-Control'] = (
-            'public, max-age=86400, stale-while-revalidate=86400'
+            'public, max-age=86400, stale-while-revalidate=86400, stale-if-error=604800'
         )
         return JSONResponse(
             status_code=200,
