@@ -63,9 +63,7 @@ def get_csv_dump(alt_authorization: str = None, authorization=Header(None)):
     headers = {'x-request-cost': str(attempt_request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = users.helper.get_permissions_from_header(
-            itgs, authorization, (
-                *ratelimit_helper.RATELIMIT_PERMISSIONS
-            )
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
         )
 
         settings = (
