@@ -12,11 +12,13 @@ from datetime import datetime
 import sqlparse
 import time
 from .edit_router import router as edit_router
+from .get_csv_dump import router as get_csv_dump_router
 import ratelimit_helper
 
 
 router = APIRouter()
 router.include_router(edit_router)
+router.include_router(get_csv_dump_router)
 
 
 @router.get(

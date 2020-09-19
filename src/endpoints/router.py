@@ -382,7 +382,8 @@ def show_param(endpoint_slug: str, location: str, path: str = '', name: str = ''
     - `endpoint_slug (str)`: The slug for the endpoint that the parameter is
       for.
     - `location (str)`: The location where the parameter is passed within the
-      endpoint. This acts as an enum and is one of "query", "header", "body".
+      endpoint. This acts as an enum and is one of "path", "query", "header",
+      "body".
     - `path (str)`: The path to the endpoint within the location but before
       the name. For query and header parameters this is a blank string.
       For a body parameter that's nested this is a dot-separated list that
@@ -973,7 +974,7 @@ def put_endpoint_param(
     - `endpoint_slug (str)`: The slug of the endpoint this parameter is
       in.
     - `location (str)`: The location of this parameter; acts as an enum
-      and is one of "query", "body", and "header"
+      and is one of "path", "query", "body", and "header"
     - `path (str)`: The path to the endpoint within the location but before
       the name. For query and header parameters this is a blank string.
       For a body parameter that's nested this is a dot-separated list that
@@ -988,13 +989,13 @@ def put_endpoint_param(
     if authorization is None:
         return Response(status_code=401)
 
-    if location not in ('query', 'body', 'header'):
+    if location not in ('path', 'query', 'body', 'header'):
         return JSONResponse(
             status_code=422,
             content={
                 'detail': {
                     'loc': ['location'],
-                    'msg': 'Must be one of query, body, header',
+                    'msg': 'Must be one of path, query, body, header',
                     'type': 'value_error'
                 }
             }
