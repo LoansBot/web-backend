@@ -151,6 +151,7 @@ def get_csv_dump(alt_authorization: str = None, authorization=Header(None)):
 
         headers['Content-Type'] = 'text/csv'
         headers['Content-Disposition'] = 'attachment; filename="loans.csv"'
+        headers['Cache-Control'] = 'public, max-age=86400'
         return StreamingResponse(
             query_generator(
                 query.get_sql(),
