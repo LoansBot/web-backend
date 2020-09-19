@@ -119,7 +119,6 @@ def get_csv_dump(alt_authorization: str = None, authorization=Header(None)):
         repayment_events = Table('loan_repayment_events')
         query = (
             Query.from_(loans)
-            .distinct_on(loans.id)
             .select(
                 loans.id,
                 loans.lender_id,
@@ -142,7 +141,12 @@ def get_csv_dump(alt_authorization: str = None, authorization=Header(None)):
             .on(principal_repayments.id == loans.principal_repayment_id)
             .left_join(repayment_events)
             .on(repayment_events.loan_id == loans.id)
-            .groupby(loans.id)
+            .groupby(
+                loans.id,
+                currencies.id,
+                principals.id,
+                principal_repayments.id
+            )
         )
 
         headers['Content-Type'] = 'text/csv'
