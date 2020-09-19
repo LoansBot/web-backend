@@ -395,8 +395,9 @@ def loans_by_thread(
                 )
 
             match_dict = match.groupdict()
-            comment_fullname = match_dict.get('comment_fullname')
-            parent_fullname = match_dict['parent_fullname']
+            if 'comment_fullname' in match_dict:
+                comment_fullname = 't1_' + match_dict['comment_fullname']
+            parent_fullname = 't3_' + match_dict['parent_fullname']
 
     if fmt not in (0, 1):
         return JSONResponse(
