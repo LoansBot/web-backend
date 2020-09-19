@@ -93,7 +93,7 @@ def get_loans_by_thread(thread: str, request: Request):
 
         comment_fullname = 't1_' + matchdict['comment_fullname']
         loans = Table('loans')
-        creation_infos = Table('creation_infos')
+        creation_infos = Table('loan_creation_infos')
         itgs.read_cursor.execute(
             Query.from_(loans)
             .join(creation_infos)
