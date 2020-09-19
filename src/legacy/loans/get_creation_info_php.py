@@ -4,11 +4,13 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from legacy.models import PHPErrorResponse, PHPError
+from legacy.models import PHPErrorResponse, RATELIMIT_RESPONSE, PHPError
 from legacy.helper import find_bearer_token, try_handle_deprecated_call
 import users.helper
+import ratelimit_helper
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from pypika import PostgreSQLQuery as Query, Table, Parameter
+import math
 
 
 SLUG = 'get_creation_info'
@@ -69,7 +71,8 @@ def get_creation_info(loan_id: str, request: Request):
     """
     with LazyItgs() as itgs:
         auth = find_bearer_token(request)
-        user_id, _, _ = users.helper.get_permissions_from_header(itgs, auth, [])
+        user_id, _, perms = users.helper.get_permissions_from_header(
+            itgs, auth, ratelimit_helper.RATELIMIT_PERMISSIONS)
         resp = try_handle_deprecated_call(itgs, request, SLUG, user_id=user_id)
 
         if resp is not None:
@@ -100,6 +103,15 @@ def get_creation_info(loan_id: str, request: Request):
                         error_message='loan_id is required at this endpoint'
                     )]
                 ).dict()
+            )
+
+        request_cost = len(loan_ids) * 5 + max(1, math.ceil(math.log(len(loan_ids))))
+        headers = {'x-request-cost': str(request_cost)}
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return JSONResponse(
+                content=RATELIMIT_RESPONSE.dict(),
+                status_code=429,
+                headers=headers
             )
 
         creation_infos = Table('loan_creation_infos')
@@ -145,9 +157,11 @@ def get_creation_info(loan_id: str, request: Request):
 
             row = itgs.read_cursor.fetchone()
 
+        headers['Cache-Control'] = 'public, max-age=86400'
         return JSONResponse(
             status_code=200,
             content=ResponseFormat(
                 results=results
-            ).dict()
+            ).dict(),
+            headers=headers
         )

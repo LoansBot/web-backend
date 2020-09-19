@@ -1,5 +1,4 @@
-"""This handles the deprecated endpoint /api/get_creation_info.php. See
-+get_creation_info+ for details.
+"""This handles the deprecated endpoint /api/get_dump_csv.php
 """
 from fastapi import APIRouter, Request
 from fastapi.responses import Response, RedirectResponse
@@ -8,7 +7,7 @@ import users.helper
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 
 
-SLUG = 'get_dump_csv'
+SLUG = 'get_dump_csv_legacy'
 """The slug for this legacy endpoint"""
 
 router = APIRouter()
