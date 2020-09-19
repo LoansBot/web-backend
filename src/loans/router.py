@@ -2,7 +2,6 @@ from fastapi import APIRouter, Header
 from fastapi.responses import Response, JSONResponse
 from . import models
 from . import helper
-from models import ErrorResponse
 import users.helper
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 import lbshared.queries
@@ -14,6 +13,7 @@ import time
 from .edit_router import router as edit_router
 from .get_csv_dump import router as get_csv_dump_router
 import ratelimit_helper
+import re
 
 
 router = APIRouter()
@@ -25,8 +25,7 @@ router.include_router(get_csv_dump_router)
     '/?',
     tags=['loans'],
     responses={
-        200: {'description': 'Success', 'model': models.LoansResponse},
-        422: {'description': 'Arguments could not be interpreted', 'model': ErrorResponse}
+        200: {'description': 'Success', 'model': models.LoansResponse}
     }
 )
 def index(
@@ -319,6 +318,183 @@ def index(
 
 
 @router.get(
+    '/threads/?',
+    tags=['loans'],
+    responses={
+        200: {'description': 'Success', 'model': models.LoansResponse}
+    }
+)
+def loans_by_thread(
+        url: str = None, parent_fullname: str = None,
+        comment_fullname: str = None, fmt: int = 0,
+        after_id: int = None, authorization=Header(None)):
+    """Fetch the loans that belong to the thread. The thread may be specified
+    either as a url, in which the following two are examples of how the url
+    must be structured:
+
+    - https://reddit.com/comments/{parent_id}/*
+    - https://www.reddit.com/r/*/comments/{parent_id}/*
+
+    or by just by the fullname of the thread (e.g. `t3_foobar`). A comment may
+    be supplied (either via a direct link to the comment or by supplying the
+    comment fullname), in which case the result is limited to loans created at
+    that specific comment.
+
+    If none of `thread`, `parent_fullname`, and `comment_fullname` are set this
+    will return a 422.
+
+    In the vast majority of cases there is only 1 loan per thread. But for the
+    threads that are reused for creating loans this will paginate using id asc,
+    which is the most performant way to paginate.
+
+    Arguments:
+    - `url (str, None)`: The full url to parse for a parent fullname and
+      potentially a comment fullname. Ignored if parent or comment fullname
+      are set.
+    - `parent_fullname (str, None)`: The fullname (e.g. `t3_foobar`) of the
+      thread to return loans created in. Ignored if `comment_fullname` is set,
+      overrides `thread` if set.
+    - `comment_fullname (str, None)`: The fullname (e.g. `t1_foobar`) of the
+      comment to return loans created in. Overrides `thread` and
+      `parent_fullname` if set.
+    - `fmt (int)`: Either 0 (return ids) or 1 (return basic info, triples cost)
+    - `after_id (int, None)`: If specified only ids with at least this id are
+      returned.
+    """
+    if all((s is None) for s in (url, parent_fullname, comment_fullname)):
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['url'],
+                    'msg': 'One of url, parent_fullname, and comment_fullname must be set',
+                    'type': 'value_error'
+                }
+            }
+        )
+
+    if comment_fullname is None:
+        if parent_fullname is None:
+            url_regex = (
+                r'^https?://(www.)?reddit.com(/r/[^/]+)?/'
+                + r'comments/(?P<parent_fullname>[^\?/]+)'
+                + r'(/[^\?/]+/(?P<comment_fullname>[^\?/]+))?.*?$'
+            )
+            match = re.match(url_regex, url)
+
+            if match is None:
+                return JSONResponse(
+                    status_code=422,
+                    content={
+                        'detail': {
+                            'loc': ['url'],
+                            'msg': 'Must be a thread or comment permalink.',
+                            'type': 'value_error'
+                        }
+                    }
+                )
+
+            match_dict = match.groupdict()
+            comment_fullname = match_dict.get('comment_fullname')
+            parent_fullname = match_dict['parent_fullname']
+
+    if fmt not in (0, 1):
+        return JSONResponse(
+            status_code=422,
+            content={
+                'detail': {
+                    'loc': ['fmt'],
+                    'msg': 'must be one of (0, 1)',
+                    'type': 'value_error'
+                }
+            }
+        )
+
+    limit = 3
+    request_cost = 25 if fmt == 0 else 75
+    headers = {'x-request-cost': str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = users.helper.get_permissions_from_header(
+            itgs, authorization, (
+                helper.DELETED_LOANS_PERM,
+                *ratelimit_helper.RATELIMIT_PERMISSIONS
+            )
+        )
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        can_see_deleted = helper.DELETED_LOANS_PERM in perms
+
+        loans = Table('loans')
+        creation_infos = Table('loan_creation_infos')
+        if fmt == 0:
+            query = Query.from_(loans).select(loans.id)
+        else:
+            query = helper.get_basic_loan_info_query().select(loans.id)
+
+        query = (
+            query.join(creation_infos)
+            .on(creation_infos.loan_id == loans.id)
+        )
+
+        if not can_see_deleted:
+            query = query.where(loans.deleted_at.isnull())
+
+        params = []
+        if after_id is not None:
+            query = query.where(loans.id > Parameter('%s'))
+            params.append(after_id)
+
+        if comment_fullname is not None:
+            query = query.where(creation_infos.comment_fullname == Parameter('%s'))
+            params.append(comment_fullname)
+        else:
+            query = query.where(creation_infos.parent_fullname == Parameter('%s'))
+            params.append(parent_fullname)
+
+        query = (
+            query.orderby(loans.id, order=Order.asc)
+            .limit(limit + 1)
+        )
+
+        result_loans = []
+        have_more = False
+        last_id = None
+
+        itgs.read_cursor.execute(query.get_sql(), params)
+        row = itgs.read_cursor.fetchone()
+        while row is not None:
+            if len(result_loans) >= limit:
+                have_more = True
+                row = itgs.read_cursor.fetchone()
+                continue
+
+            last_id = row[-1]
+            if fmt == 0:
+                result_loans.append(row[0])
+            else:
+                result_loans.append(helper.parse_basic_loan_info(row).dict())
+
+            row = itgs.read_cursor.fetchone()
+
+        result = {'loans': result_loans}
+        if have_more:
+            result['next_id'] = last_id
+
+        if have_more:
+            headers['Cache-Control'] = 'public, max-age=604800'
+        else:
+            headers['Cache-Control'] = 'public, max-age=86400'
+
+        return JSONResponse(
+            content=result,
+            status_code=200,
+            headers=headers
+        )
+
+
+@router.get(
     '/{loan_id}/?',
     tags=['loans'],
     responses={
@@ -329,6 +505,8 @@ def index(
     }
 )
 def show(loan_id: int, authorization: str = Header(None)):
+    request_cost = 1
+    headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = users.helper.get_permissions_from_header(
             itgs, authorization, (
@@ -337,22 +515,20 @@ def show(loan_id: int, authorization: str = Header(None)):
             )
         )
 
-        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, 1):
-            return Response(status_code=429)
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
 
         basic = helper.get_basic_loan_info(itgs, loan_id, perms)
         if basic is None:
-            return Response(status_code=404)
+            return Response(status_code=404, headers=headers)
 
         etag = helper.calculate_etag(itgs, loan_id)
-
+        headers['etag'] = etag
+        headers['Cache-Control'] = 'public, max-age=604800'
         return JSONResponse(
             status_code=200,
             content=basic.dict(),
-            headers={
-                'etag': etag,
-                'Cache-Control': 'public, max-age=604800'
-            }
+            headers=headers
         )
 
 
@@ -365,6 +541,8 @@ def show(loan_id: int, authorization: str = Header(None)):
     }
 )
 def show_detailed(loan_id: int, authorization: str = Header(None)):
+    request_cost = 5
+    headers = {'x-request-cost': str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = users.helper.get_permissions_from_header(
             itgs, authorization, (
@@ -374,24 +552,22 @@ def show_detailed(loan_id: int, authorization: str = Header(None)):
             )
         )
 
-        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, 5):
-            return Response(status_code=429)
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
 
         basic = helper.get_basic_loan_info(itgs, loan_id, perms)
         if basic is None:
-            return Response(status_code=404)
+            return Response(status_code=404, headers=headers)
 
         events = helper.get_loan_events(itgs, loan_id, perms)
 
         etag = helper.calculate_etag(itgs, loan_id)
-
+        headers['etag'] = etag
+        headers['Cache-Control'] = 'public, max-age=604800'
         return JSONResponse(
             status_code=200,
             content=models.DetailedLoanResponse(
                 events=events, basic=basic
             ).dict(),
-            headers={
-                'etag': etag,
-                'Cache-Control': 'public, max-age=604800'
-            }
+            headers=headers
         )
