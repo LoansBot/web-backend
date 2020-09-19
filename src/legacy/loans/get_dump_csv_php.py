@@ -21,7 +21,7 @@ router = APIRouter()
     }
 )
 def get_dump_csv(request: Request):
-    """Redirects to /api/loans/get_csv_dump.py with the bearer token as a query
+    """Redirects to /api/loans/loans.csv with the bearer token as a query
     parameter.
     """
     with LazyItgs() as itgs:
