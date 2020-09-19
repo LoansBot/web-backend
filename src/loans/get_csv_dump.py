@@ -16,7 +16,7 @@ async def query_generator(query, first_row):
     yield "\n"
 
     with LazyItgs() as itgs:
-        itgs.read_cursor.execute(query.get_sql())
+        itgs.read_cursor.execute(query)
         row = itgs.read_cursor.fetchone()
         while row is not None:
             for idx, part in enumerate(row):
