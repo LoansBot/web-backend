@@ -2,7 +2,7 @@ from fastapi import APIRouter, Header
 from fastapi.responses import Response, StreamingResponse
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lbshared.user_settings import get_settings
-from pypika import Table, Query, Parameter, Order
+from pypika import Table, PostgreSQLQuery as Query, Parameter, Order
 from pypika.functions import Count, Star, Max
 import users.helper
 import ratelimit_helper
@@ -133,16 +133,16 @@ def get_csv_dump(alt_authorization: str = None, authorization=Header(None)):
                 loans.repaid_at,
                 loans.unpaid_at
             )
-            .joins(principals)
+            .join(principals)
             .on(principals.id == loans.principal_id)
-            .joins(currencies)
+            .join(currencies)
             .on(currencies.id == principals.currency_id)
-            .joins(principal_repayments)
+            .join(principal_repayments)
             .on(principal_repayments.id == loans.principal_repayment_id)
-            .left_joins(repayment_events)
+            .left_join(repayment_events)
             .on(repayment_events.loan_id == loans.id)
+            .groupby(loans.id)
         )
-        query = query.groupby(loans.id)
 
         headers['Content-Type'] = 'text/csv'
         headers['Content-Disposition'] = 'attachment; filename="loans.csv"'
