@@ -36,7 +36,7 @@ async def query_generator(query, first_row):
         403: {'description': 'Authorization invalid'}
     }
 )
-def get_csv_dump(authorization=Header(None)):
+def get_csv_dump(alt_authorization: str = None, authorization=Header(None)):
     """Get a csv of all loans where the columns are
 
     id, lender_id, borrower_id, currency, principal_minor, principal_cents,
@@ -49,10 +49,14 @@ def get_csv_dump(authorization=Header(None)):
     which contribute to the global ratelimit. It is NOT cheaper to use this
     endpoint compared to just walking the index endpoint.
 
-    This mainly exists for users which are willing to pay for a csv dump.
+    This mainly exists for users which are willing to pay for a csv dump. You
+    may use a query parameter for authorization instead of a header.
     """
-    if authorization is None:
+    if authorization is None and alt_authorization is None:
         return Response(status_code=401)
+
+    if authorization is None:
+        authorization = f'bearer {alt_authorization}'
 
     attempt_request_cost = 1
     check_request_cost_cost = 10
