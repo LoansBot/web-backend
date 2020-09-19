@@ -75,7 +75,7 @@ def get_loans_by_thread(thread: str, request: Request):
 
         match = URL_REGEX.match(thread)
         if match is None:
-            headers['Cache-Control'] = 'immutable'
+            headers['Cache-Control'] = 'public, max-age=604800'
             return JSONResponse(
                 content=ResponseFormat(loans=[]).dict(),
                 status_code=200,
@@ -84,7 +84,7 @@ def get_loans_by_thread(thread: str, request: Request):
 
         matchdict = match.groupdict()
         if 'comment_fullname' not in matchdict:
-            headers['Cache-Control'] = 'immutable'
+            headers['Cache-Control'] = 'public, max-age=604800'
             return JSONResponse(
                 content=ResponseFormat(loans=[]).dict(),
                 status_code=200,
