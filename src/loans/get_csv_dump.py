@@ -2,7 +2,7 @@ from fastapi import APIRouter, Header
 from fastapi.responses import Response, StreamingResponse
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lbshared.user_settings import get_settings
-from pypika import Table, PostgreSQLQuery as Query, Parameter, Order
+from pypika import Table, PostgreSQLQuery as Query
 from pypika.functions import Count, Star, Max
 import users.helper
 import ratelimit_helper
