@@ -159,5 +159,7 @@ def get_csv_dump(alt_authorization: str = None, authorization=Header(None)):
                     'principal_cents', 'principal_repayment_minor', 'principal_repayment_cents',
                     'created_at', 'last_repayment_at', 'repaid_at', 'unpaid_at'
                 ))
-            )
+            ),
+            status_code=200,
+            headers=headers
         )
