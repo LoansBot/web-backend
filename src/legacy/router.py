@@ -47,9 +47,11 @@ Our deprecation schedule works as follows:
   path for reuse.
 """
 import legacy.loans.router
+import legacy.trusts.router
 
 from fastapi import APIRouter
 
 
 router = APIRouter()
 router.include_router(legacy.loans.router.router)
+router.include_router(legacy.trusts.router.router)

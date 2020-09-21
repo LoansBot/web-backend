@@ -1,10 +1,10 @@
 """This handles the deprecated endpoint /api/get_loans_by_thread.php
 """
 from fastapi import APIRouter, Request
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import JSONResponse
 from legacy.helper import find_bearer_token, try_handle_deprecated_call
 from pydantic import BaseModel
-from legacy.models import PHPErrorResponse, RATELIMIT_RESPONSE, PHPError
+from legacy.models import RATELIMIT_RESPONSE
 from pypika import PostgreSQLQuery as Query, Table, Parameter
 import users.helper
 import ratelimit_helper
