@@ -148,20 +148,16 @@ def get_promotion_blacklist(
         usrs = Table('users')
         trsts = Table('trusts')
         query = (
-            Query.from_(usrs)
+            Query.from_(trsts)
             .select(
                 trsts.id,
                 usrs.username,
                 trsts.status,
                 trsts.created_at
             )
-            .where(
-                Exists(
-                    Query.from_(trsts)
-                    .where(trsts.user_id == usrs.id)
-                    .where(trsts.status != Parameter('$1'))
-                )
-            )
+            .join(usrs)
+            .on(usrs.id == trsts.user_id)
+            .where(trsts.status != Parameter('$1'))
             .limit('$2')
         )
         args = ['good', limit]
