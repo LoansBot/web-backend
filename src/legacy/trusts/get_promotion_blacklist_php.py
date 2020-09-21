@@ -8,7 +8,6 @@ import users.helper
 import trusts.helper
 from lbshared.user_settings import get_settings
 from lbshared.queries import convert_numbered_args
-from lbshared.pypika_crits import ExistsCriterion as Exists
 from pydantic import BaseModel
 from legacy.models import PHPErrorResponse, RATELIMIT_RESPONSE
 from pypika import PostgreSQLQuery as Query, Table, Parameter
@@ -209,7 +208,7 @@ def get_promotion_blacklist(
             row = itgs.read_cursor.fetchone()
 
         return JSONResponse(
-            content=ResponseFormat(list=denylist),
+            content=ResponseFormat(list=denylist).dict(),
             status_code=200,
             headers=headers
         )
