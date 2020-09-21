@@ -142,6 +142,9 @@ def get_promotion_blacklist(
             headers['Cache-Control'] = 'no-store'
             headers['Pragma'] = 'no-cache'
 
+        headers['x-can-view-others-trust'] = str(can_view_others_trust)
+        headers['x-can-view-self-trust'] = str(can_view_self_trust)
+
         usrs = Table('users')
         trsts = Table('trusts')
         query = (
@@ -155,7 +158,7 @@ def get_promotion_blacklist(
             .where(
                 Exists(
                     Query.from_(trsts)
-                    .where(trsts.user_id == users.id)
+                    .where(trsts.user_id == usrs.id)
                     .where(trsts.status != Parameter('$1'))
                 )
             )
@@ -176,11 +179,11 @@ def get_promotion_blacklist(
             args.append(max_id)
 
         if not can_view_self_trust:
-            query = query.where(users.id != Parameter(f'${len(args) + 1}'))
+            query = query.where(usrs.id != Parameter(f'${len(args) + 1}'))
             args.append(user_id)
 
         if not can_view_others_trust:
-            query = query.where(users.id == Parameter(f'${len(args) + 1}'))
+            query = query.where(usrs.id == Parameter(f'${len(args) + 1}'))
             args.append(user_id)
 
         itgs.read_cursor.execute(
