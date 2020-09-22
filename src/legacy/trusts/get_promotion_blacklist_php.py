@@ -78,7 +78,7 @@ def get_promotion_blacklist(
     {
       "result_type": "PROMOTION_BLACKLIST"
       "success": true,
-      "list": {
+      "list": [
           {
               id: 1,
               username: "johndoe",
@@ -87,7 +87,7 @@ def get_promotion_blacklist(
               added_at: <utc milliseconds>
           },
           ...
-      }
+      ]
     }
     ```
     """
