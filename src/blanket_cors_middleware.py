@@ -54,7 +54,7 @@ class BlanketCORSMiddleware:
 
         headers = {
             'Access-Control-Allow-Methods': ', '.join(ALL_METHODS),
-            'Access-Control-Max-Age': '600',
+            'Access-Control-Max-Age': '604800',
             'Access-Control-Allow-Origin': requested_origin
         }
         headers["Access-Control-Allow-Headers"] = (
