@@ -3,6 +3,7 @@ from fastapi.responses import Response, JSONResponse
 from blanket_cors_middleware import BlanketCORSMiddleware
 from lblogging import Level
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
+from .models import TestPostBody
 import json
 import secrets
 import users.router
@@ -62,6 +63,16 @@ def test_revalidate():
             'Cache-Control': cache_control
         },
         status_code=200
+    )
+
+
+@app.post('/test_post')
+def test_post(payload: TestPostBody):
+    return JSONResponse(
+        content={
+            'payload': payload.payload
+        },
+        status=200
     )
 
 
