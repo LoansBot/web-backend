@@ -1,5 +1,5 @@
 from fastapi import FastAPI, status
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from blanket_cors_middleware import BlanketCORSMiddleware
 from lblogging import Level
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
@@ -49,6 +49,20 @@ def handle_exception(request, exc):
 @app.get('/')
 def root():
     return {"message": "Hello World"}
+
+
+@app.get('/test_revalidate')
+def test_revalidate():
+    cache_control = 'public, max-age=60, must-revalidate'
+    return JSONResponse(
+        content={
+            'cache_control': cache_control
+        },
+        headers={
+            'Cache-Control': cache_control
+        },
+        status_code=200
+    )
 
 
 @app.get('/test_log')
