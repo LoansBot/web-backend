@@ -72,7 +72,7 @@ def test_post(payload: TestPostBody):
         content={
             'payload': payload.payload
         },
-        status=200
+        status_code=200
     )
 
 
