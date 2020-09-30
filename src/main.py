@@ -3,7 +3,7 @@ from fastapi.responses import Response, JSONResponse
 from blanket_cors_middleware import BlanketCORSMiddleware
 from lblogging import Level
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
-from .models import TestPostBody
+from models import TestPostBody
 import json
 import secrets
 import users.router
