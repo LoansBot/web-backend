@@ -93,7 +93,7 @@ def get_creation_info(loan_id: int, request: Request):
                             error_message='There is no loan with the specified id!'
                         )
                     ]
-                ),
+                ).dict(),
                 status_code=404
             )
 
@@ -116,7 +116,7 @@ def get_creation_info(loan_id: int, request: Request):
                             )
                         )
                     ]
-                ),
+                ).dict(),
                 status_code=404
             )
 
