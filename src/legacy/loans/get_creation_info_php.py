@@ -115,14 +115,18 @@ def get_creation_info(loan_id: str, request: Request):
             )
 
         creation_infos = Table('loan_creation_infos')
+        loans = Table('loans')
         itgs.read_cursor.execute(
             Query.from_(creation_infos)
+            .join(loans)
+            .on(loans.id == creation_infos.loan_id)
             .select(
                 creation_infos.loan_id,
                 creation_infos.type,
                 creation_infos.parent_fullname,
                 creation_infos.comment_fullname
             )
+            .where(loans.deleted_at.isnull())
             .where(
                 creation_infos.loan_id.isin(
                     [Parameter('%s') for _ in loan_ids]
