@@ -10,7 +10,6 @@ import users.helper
 import ratelimit_helper
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from pypika import PostgreSQLQuery as Query, Table, Parameter
-import math
 
 
 SLUG = 'get_request_thread'
