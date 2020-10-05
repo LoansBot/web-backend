@@ -75,7 +75,7 @@ from starlette.concurrency import run_until_first_complete
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lbshared.queries import convert_numbered_args
 from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
-from pypika.functions import Count, Star, Max, Extract, Cast, Function
+from pypika.functions import Count, Star, Extract, Cast, Function
 from lbshared.pypika_funcs import Greatest
 import users.helper
 import ratelimit_helper
@@ -364,7 +364,7 @@ def index_loans(
                         loans.id,
                         Greatest(
                             loans.created_at,
-                            Max(tuple(tbl.created_at for tbl in event_tables))
+                            *(tbl.created_at for tbl in event_tables)
                         ).as_('latest_event_at')
                     )
                     .groupby(loans.id),
