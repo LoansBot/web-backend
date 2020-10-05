@@ -361,7 +361,7 @@ def index_loans(
                 query.with_(
                     Query.from_(loans)
                     .select(
-                        loans.id,
+                        loans.id.as_('loan_id'),
                         Greatest(
                             loans.created_at,
                             *(tbl.created_at for tbl in event_tables)
@@ -370,6 +370,8 @@ def index_loans(
                     .groupby(loans.id),
                     'latest_events'
                 )
+                .left_join(latest_events)
+                .on(latest_events.loan_id == loans.id)
                 .select(
                     loans.lender_id,
                     loans.borrower_id,
