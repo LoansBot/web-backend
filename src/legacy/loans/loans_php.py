@@ -517,39 +517,39 @@ class _CompactResponse(_CursorStreamedResponse):
     async def write_row(self, row, write):
         await write(
             _CompactResponse.FORMAT.format(
-                row
+                *row
             ).encode('ascii'))
 
 
 class _StandardResponse(_CursorStreamedResponse):
     FORMAT = (
-        '{"loan_id":{},"lender_id":{},"borrower_id":{},'
+        '{{"loan_id":{},"lender_id":{},"borrower_id":{},'
         '"principal_cents":{},"principal_repayment_cents":{},'
-        '"unpaid":{},"created_at":{},"updated_at":{}}'
+        '"unpaid":{},"created_at":{},"updated_at":{}}}'
     )
 
     async def write_row(self, row, write):
         await write(
             _StandardResponse.FORMAT.format(
-                row
+                *row
             )
         )
 
 
 class _ExtendedResponse(_CursorStreamedResponse):
     FORMAT_NO_THREAD = (
-        '{"loan_id":{},"lender_id":{},"borrower_id":{},'
+        '{{"loan_id":{},"lender_id":{},"borrower_id":{},'
         '"principal_cents":{},"principal_repayment_cents":{},'
         '"unpaid":{},"created_at":{},"updated_at":{},'
-        '"thread":null,"lender_name":"{}","borrower_name":"{}"}'
+        '"thread":null,"lender_name":"{}","borrower_name":"{}"}}'
     )
 
     FORMAT_WITH_THREAD = (
-        '{"loan_id":{},"lender_id":{},"borrower_id":{},'
+        '{{"loan_id":{},"lender_id":{},"borrower_id":{},'
         '"principal_cents":{},"principal_repayment_cents":{},'
         '"unpaid":{},"created_at":{},"updated_at":{},'
         '"thread":"https://reddit.com/comments/{}/rl/{}",'
-        '"lender_name":"{}","borrower_name":"{}"}'
+        '"lender_name":"{}","borrower_name":"{}"}}'
     )
 
     async def write_row(self, row, write):
@@ -563,5 +563,5 @@ class _ExtendedResponse(_CursorStreamedResponse):
             return
 
         await write(
-            _StandardResponse.FORMAT.format(row)
+            _StandardResponse.FORMAT.format(*row)
         )
