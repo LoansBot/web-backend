@@ -410,7 +410,7 @@ def index_loans(
                     )
                 )
 
-        sql, args = convert_numbered_args(query, params)
+        sql, args = convert_numbered_args(query.get_sql(), params)
         if format == 0:
             return _UltraCompactResponse((sql, args))
         elif format == 1:
