@@ -364,7 +364,7 @@ def index_loans(
                         loans.id,
                         Greatest(
                             loans.created_at,
-                            Max(*(tbl.created_at for tbl in event_tables))
+                            Max(tuple(tbl.created_at for tbl in event_tables))
                         ).as_('latest_event_at')
                     )
                     .groupby(loans.id),
