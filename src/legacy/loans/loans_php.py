@@ -494,7 +494,7 @@ class _CursorStreamedResponse(Response):
 
         await write(b'{"result_type":"')
         await write(self.result_type.encode('ascii'))
-        await write(b'","success":true","loans":[')
+        await write(b'","success":true,"loans":[')
         await self._write_inner(write)
         await write(b']}')
         await send({"type": "http.response.body", "body": view[:pos], "more_body": False})
