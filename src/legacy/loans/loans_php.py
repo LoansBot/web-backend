@@ -532,7 +532,7 @@ class _StandardResponse(_CursorStreamedResponse):
         await write(
             _StandardResponse.FORMAT.format(
                 *row
-            )
+            ).encode('ascii')
         )
 
 
@@ -558,10 +558,10 @@ class _ExtendedResponse(_CursorStreamedResponse):
                 _StandardResponse.FORMAT.format(
                     *row[:8],
                     *row[10:]
-                )
+                ).encode('ascii')
             )
             return
 
         await write(
-            _StandardResponse.FORMAT.format(*row)
+            _StandardResponse.FORMAT.format(*row).encode('ascii')
         )
