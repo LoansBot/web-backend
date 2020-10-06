@@ -74,7 +74,7 @@ from starlette.types import Receive, Scope, Send
 from starlette.concurrency import run_until_first_complete
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lbshared.queries import convert_numbered_args
-from pypika import PostgreSQLQuery as Query, Table, Parameter, Order
+from pypika import PostgreSQLQuery as Query, Table, Parameter, Order, Case
 from pypika.functions import Count, Star, Extract, Cast, Function
 from lbshared.pypika_funcs import Greatest
 import users.helper
@@ -377,7 +377,11 @@ def index_loans(
                     loans.borrower_id,
                     principals.amount_usd_cents,
                     principal_repayments.amount_usd_cents,
-                    loans.unpaid_at.notnull(),
+                    (
+                        Case()
+                        .when(loans.unpaid_at.isnull(), 'false')
+                        .else_('true')
+                    ),
                     Cast(
                         Extract('epoch', loans.created_at) * 1000,
                         'bigint'
