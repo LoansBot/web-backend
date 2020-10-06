@@ -497,6 +497,7 @@ class _CursorStreamedResponse(Response):
             row = itgs.read_cursor.fetchone()
             if row is None:
                 await write(b']')
+                await send({"type": "http.response.body", "body": view[:pos], "more_body": False})
                 return
             await self.write_row(row, write)
             row = itgs.read_cursor.fetchone()
