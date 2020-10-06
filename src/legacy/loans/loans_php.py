@@ -181,6 +181,14 @@ def index_loans(
         else:
             real_request_cost = limit
 
+        headers['x-request-cost'] = str(attempt_request_cost + real_request_cost)
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, real_request_cost):
+            return JSONResponse(
+                content=RATELIMIT_RESPONSE.dict(),
+                status_code=429,
+                headers=headers
+            )
+
         if format == 0:
             real_request_cost = math.ceil(math.log(real_request_cost + 1))
         elif format < 3:
@@ -345,8 +353,6 @@ def index_loans(
         if limit is not None:
             query = query.limit(limit)
 
-        # `loan_id`, `lender_id`, `borrower_id`, `principal_cents`,
-        # `principal_repayment_cents`, `unpaid`, `created_at`, `updated_at`
         query = query.select(loans.id)
         if format > 0:
             _ensure_principals()
@@ -417,14 +423,15 @@ def index_loans(
                 )
 
         sql, args = convert_numbered_args(query.get_sql(), params)
+        headers['Cache-Control'] = 'public, max-age=600'
         if format == 0:
-            return _UltraCompactResponse((sql, args))
+            return _UltraCompactResponse((sql, args), headers)
         elif format == 1:
-            return _CompactResponse((sql, args))
+            return _CompactResponse((sql, args), headers)
         elif format == 2:
-            return _StandardResponse((sql, args))
+            return _StandardResponse((sql, args), headers)
         else:
-            return _ExtendedResponse((sql, args))
+            return _ExtendedResponse((sql, args), headers)
 
 
 def _zero_to_none(val: int):
@@ -450,12 +457,12 @@ def _int_to_bool(val: int):
 
 
 class _CursorStreamedResponse(Response):
-    def __init__(self, query):
+    def __init__(self, query, headers):
         self.query = query
         self.status_code = 200
         self.media_type = 'application/json'
         self.background = None
-        self.init_headers(None)
+        self.init_headers(headers)
 
     async def listen_for_disconnect(self, receive: Receive) -> None:
         while True:
