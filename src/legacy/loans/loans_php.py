@@ -559,13 +559,17 @@ class _ExtendedResponse(_CursorStreamedResponse):
     async def write_row(self, row, write):
         if row[8] is None:
             await write(
-                _StandardResponse.FORMAT.format(
+                _ExtendedResponse.FORMAT_NO_THREAD
+                .format(
                     *row[:8],
                     *row[10:]
-                ).encode('ascii')
+                )
+                .encode('ascii')
             )
             return
 
         await write(
-            _StandardResponse.FORMAT.format(*row).encode('ascii')
+            _ExtendedResponse.FORMAT_WITH_THREAD
+            .format(*row)
+            .encode('ascii')
         )
