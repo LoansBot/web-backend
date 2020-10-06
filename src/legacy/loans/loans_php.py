@@ -425,13 +425,13 @@ def index_loans(
         sql, args = convert_numbered_args(query.get_sql(), params)
         headers['Cache-Control'] = 'public, max-age=600'
         if format == 0:
-            return _UltraCompactResponse((sql, args), headers)
+            return _UltraCompactResponse((sql, args), headers, 'LOANS_ULTRACOMPACT')
         elif format == 1:
-            return _CompactResponse((sql, args), headers)
+            return _CompactResponse((sql, args), headers, 'LOANS_COMPACT')
         elif format == 2:
-            return _StandardResponse((sql, args), headers)
+            return _StandardResponse((sql, args), headers, 'LOANS_STANDARD')
         else:
-            return _ExtendedResponse((sql, args), headers)
+            return _ExtendedResponse((sql, args), headers, 'LOANS_EXTENDED')
 
 
 def _zero_to_none(val: int):
@@ -457,11 +457,12 @@ def _int_to_bool(val: int):
 
 
 class _CursorStreamedResponse(Response):
-    def __init__(self, query, headers):
+    def __init__(self, query, headers, result_type):
         self.query = query
         self.status_code = 200
         self.media_type = 'application/json'
         self.background = None
+        self.result_type = result_type
         self.init_headers(headers)
 
     async def listen_for_disconnect(self, receive: Receive) -> None:
@@ -491,13 +492,18 @@ class _CursorStreamedResponse(Response):
             view[pos:pos + len(data)] = data
             pos += len(data)
 
+        await write(b'{"result_type":"')
+        await write(self.result_type.encode('ascii'))
+        await write(b'","success":true","loans":[')
+        await self._write_inner(write)
+        await write(b']}')
+        await send({"type": "http.response.body", "body": view[:pos], "more_body": False})
+
+    async def _write_inner(self, write):
         with LazyItgs() as itgs:
-            await write(b'[')
             itgs.read_cursor.execute(*self.query)
             row = itgs.read_cursor.fetchone()
             if row is None:
-                await write(b']')
-                await send({"type": "http.response.body", "body": view[:pos], "more_body": False})
                 return
             await self.write_row(row, write)
             row = itgs.read_cursor.fetchone()
@@ -505,8 +511,6 @@ class _CursorStreamedResponse(Response):
                 await write(b',')
                 await self.write_row(row, write)
                 row = itgs.read_cursor.fetchone()
-        await write(b']')
-        await send({"type": "http.response.body", "body": view[:pos], "more_body": False})
 
     async def write_row(self, row, write):
         raise NotImplementedError
