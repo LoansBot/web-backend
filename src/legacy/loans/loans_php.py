@@ -305,19 +305,10 @@ def index_loans(
                 )
             )
 
-        if borrower_name is not None:
-            _ensure_borrowers()
+        if lender_id is not None:
             query = (
                 query.where(
-                    borrowers.username == _add_param(borrower_name)
-                )
-            )
-
-        if lender_name is not None:
-            _ensure_lenders()
-            query = (
-                query.where(
-                    lenders.username == _add_param(lender_name)
+                    loans.lender_id == _add_param(lender_id)
                 )
             )
 
@@ -325,8 +316,23 @@ def index_loans(
             prm = _add_param(includes_user_id)
             query = (
                 query.where(
-                    (loans.borrower_id == prm) |
-                    (loans.lender_id == prm)
+                    (loans.borrower_id == prm) | (loans.lender_id == prm)
+                )
+            )
+
+        if borrower_name is not None:
+            _ensure_borrowers()
+            query = (
+                query.where(
+                    borrowers.username == _add_param(borrower_name.lower())
+                )
+            )
+
+        if lender_name is not None:
+            _ensure_lenders()
+            query = (
+                query.where(
+                    lenders.username == _add_param(lender_name.lower())
                 )
             )
 
@@ -336,8 +342,7 @@ def index_loans(
             prm = _add_param(includes_user_name)
             query = (
                 query.where(
-                    (lenders.username == prm) |
-                    (borrowers.username == prm)
+                    (lenders.username == prm) | (borrowers.username == prm)
                 )
             )
 
