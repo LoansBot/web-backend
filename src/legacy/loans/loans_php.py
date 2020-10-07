@@ -259,6 +259,9 @@ def index_loans(
                 .on(borrowers.id == loans.borrower_id)
             )
 
+        if id is not None:
+            query = query.where(loans.id == _add_param(id))
+
         if after_time is not None:
             query = (
                 query.where(
