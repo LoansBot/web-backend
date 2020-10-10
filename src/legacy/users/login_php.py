@@ -2,6 +2,7 @@
 """
 from fastapi import APIRouter, Request
 from fastapi.responses import Response, JSONResponse
+from pydantic import BaseModel
 from legacy.helper import find_bearer_token, try_handle_deprecated_call
 from legacy.models import PHPErrorResponse, PHPError
 import users.helper
@@ -9,6 +10,12 @@ from users.models import PasswordAuthentication
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 import security
 import time
+
+
+class ResponseFormat(BaseModel):
+    result_type: str = 'LOGIN_SUCCESS'
+    success: bool = True
+    session_id: str
 
 
 SLUG = 'login_php'
@@ -20,9 +27,9 @@ router = APIRouter()
 @router.post(
     '/login.php',
     responses={
-        200: {'description': 'Success'},
-        400: {'description': 'Failure'},
-        429: {'description': 'Ratelimited'}
+        200: {'description': 'Success', 'model': ResponseFormat},
+        400: {'description': 'Failure', 'model': PHPErrorResponse},
+        429: {'description': 'Ratelimited', 'model': PHPErrorResponse}
     }
 )
 def login(passwd_auth: PasswordAuthentication, request: Request):
@@ -68,8 +75,9 @@ def login(passwd_auth: PasswordAuthentication, request: Request):
 
         res = users.helper.create_token_from_passauth(itgs, passwd_auth_id)
         time_until_expiry = res.expires_at_utc - time.time()
-        return Response(
+        return JSONResponse(
             status_code=200,
+            content=ResponseFormat(session_id=res.token).dict(),
             headers={
                 'Set-Cookie': (
                     'session_id={}; Secure; SameSite=Strict; HttpOnly; Max-Age={}'
