@@ -59,12 +59,12 @@ def get_valid_passwd_auth(
     id_, user_id, human, hash_name, hash_, salt, iters = row
     if not security.ratelimit(
             itgs,
-            'LOGIN_ONE_AUTH',
+            'LOGIN_ONE_AUTH' if human else 'LOGIN_ONE_AUTH_AUTOMATED',
             f'login_auth_{id_}',
             {
-                int(timedelta(minutes=5).total_seconds()): 5,
-                int(timedelta(minutes=10).total_seconds()): 8,
-                int(timedelta(hours=1).total_seconds()): 10
+                int(timedelta(minutes=5).total_seconds()): 5 if human else 15,
+                int(timedelta(minutes=10).total_seconds()): 8 if human else 30,
+                int(timedelta(hours=1).total_seconds()): 10 if human else 60
             }):
         itgs.logger.print(
             Level.TRACE,
