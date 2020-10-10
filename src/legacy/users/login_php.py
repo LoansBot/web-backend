@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import Response, JSONResponse
 from legacy.helper import find_bearer_token, try_handle_deprecated_call
-from legacy.models import PHPErrorResponse, PHPError, RATELIMIT_RESPONSE
+from legacy.models import PHPErrorResponse, PHPError
 import users.helper
 from users.models import PasswordAuthentication
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
