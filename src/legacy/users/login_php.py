@@ -17,7 +17,7 @@ SLUG = 'login_php'
 router = APIRouter()
 
 
-@router.get(
+@router.post(
     '/login.php',
     responses={
         200: {'description': 'Success'},
@@ -25,7 +25,7 @@ router = APIRouter()
         429: {'description': 'Ratelimited'}
     }
 )
-def login(username: str, password: str, request: Request):
+def login(passwd_auth: PasswordAuthentication, request: Request):
     """Logs the user in by setting a cookie. This only works on old php-style endpoints
     and requires that the user have the `bypass-captcha` permission.
     """
@@ -49,11 +49,6 @@ def login(username: str, password: str, request: Request):
                 ).dict(),
                 status_code=403
             )
-
-        passwd_auth = PasswordAuthentication(
-            username=username,
-            password=password
-        )
 
         with security.fixed_duration(0.5):
             passwd_auth_id = users.helper.get_valid_passwd_auth(itgs, passwd_auth)
