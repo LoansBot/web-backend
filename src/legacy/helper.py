@@ -224,27 +224,45 @@ def try_handle_deprecated_call(
         )
 
     if user_id is None:
+        # We will error them if they have <5 errors this month or it's
+        # within 30 days of sunsetting and they have received <5 errors
+        # this week
         endpoint_users = Table('endpoint_users')
-        itgs.read_cursor.execute(
+        std_query = (
             Query.from_(endpoint_users)
             .select(Count(Star()))
             .where(endpoint_users.ip_address == Parameter('%s'))
             .where(endpoint_users.user_agent == Parameter('%s'))
             .where(endpoint_users.response_type == Parameter('%s'))
-            .where(endpoint_users.created_at > DateTrunc('month', Now()))
-            # These are just to make sure postgres is aware it can use the index
+            # notnull ensure postgres uses matching index
             .where(endpoint_users.ip_address.notnull())
             .where(endpoint_users.user_agent.notnull())
+        )
+        std_args = [
+            ip_address,
+            user_agent,
+            'error'
+        ]
+        itgs.read_cursor.execute(
+            std_query
+            .where(endpoint_users.created_at > DateTrunc('month', Now()))
             .get_sql(),
-            (
-                ip_address,
-                user_agent,
-                'error'
-            )
+            std_args
         )
         (errors_this_month,) = itgs.read_cursor.fetchone()
 
-        if errors_this_month < 5:
+        should_error = errors_this_month < 5
+        if not should_error and curtime >= sunset_time - timedelta(days=30):
+            itgs.read_cursor.execute(
+                std_query
+                .where(endpoint_users.created_at > Now() - Interval(days=7))
+                .get_sql(),
+                std_args
+            )
+            (errors_this_week,) = itgs.read_cursor.fetchone()
+            should_error = errors_this_week < 5
+
+        if should_error:
             store_response(itgs, None, ip_address, user_agent, endpoint_id, 'error')
             return JSONResponse(
                 status_code=400,
