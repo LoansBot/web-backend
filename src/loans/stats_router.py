@@ -15,10 +15,10 @@ router = APIRouter()
 @router.get(
     '/stats/{unit}/{frequency}',
     responses={
-        200: {'description': 'Success', 'model': models.LinePlot},
         404: {'description': 'No cached value for that graph available'}
     },
-    tags=['loans', 'stats']
+    tags=['loans', 'stats'],
+    response_model=models.LinePlot
 )
 def show_stats(unit: str, frequency: str, request: Request, authorization=Header(None)):
     """Fetches the most recently calculated statistics using the given unit
