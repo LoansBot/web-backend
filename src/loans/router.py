@@ -12,6 +12,7 @@ import sqlparse
 import time
 from .edit_router import router as edit_router
 from .get_csv_dump import router as get_csv_dump_router
+from .stats_router import router as stats_router
 import ratelimit_helper
 import re
 
@@ -19,6 +20,7 @@ import re
 router = APIRouter()
 router.include_router(edit_router)
 router.include_router(get_csv_dump_router)
+router.include_router(stats_router)
 
 
 @router.get(
