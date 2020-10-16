@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import typing
 
 
-class LinePlotSeries:
+class LinePlotSeries(BaseModel):
     """Describes a single series within a line plot.
 
     Attributes:
@@ -17,7 +17,7 @@ class LinePlotSeries:
     data: typing.List[float]
 
 
-class LinePlotData:
+class LinePlotData(BaseModel):
     """Describes the data for a line plot.
 
     Attributes:
@@ -29,7 +29,7 @@ class LinePlotData:
     series: typing.List[LinePlotSeries]
 
 
-class LinePlot:
+class LinePlot(BaseModel):
     """Describes a complete line plot
 
     Attributes:
