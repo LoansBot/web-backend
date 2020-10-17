@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.get(
-    '/?',
+    '/',
     tags=['logs'],
     responses={
         200: {'description': 'Success', 'model': models.LogsResponse},

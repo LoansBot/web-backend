@@ -41,6 +41,7 @@ def show_stats(unit: str, frequency: str, request: Request, authorization=Header
         if unit not in ('count', 'usd'):
             return JSONResponse(
                 status_code=422,
+                headers=headers,
                 content={
                     'detail': {
                         'loc': ['unit'],
@@ -53,6 +54,7 @@ def show_stats(unit: str, frequency: str, request: Request, authorization=Header
         if frequency not in ('monthly', 'quarterly'):
             return JSONResponse(
                 status_code=422,
+                headers=headers,
                 content={
                     'detail': {
                         'loc': ['frequency'],
