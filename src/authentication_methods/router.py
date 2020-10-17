@@ -579,7 +579,7 @@ def index_history(id: int, after_id: int = None, limit: int = None, authorizatio
 
 
 @router.get(
-    '/{id}/?',
+    '/{id}',
     responses={
         200: {'description': 'Success', 'model': models.AuthMethod},
         401: {'description': 'Authorization header missing'},

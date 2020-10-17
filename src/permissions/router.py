@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.get(
-    '/{permission}/?',
+    '/{permission}',
     tags=['permissions'],
     responses={
         200: {'description': 'Success', 'model': models.Permission},
@@ -65,7 +65,7 @@ def show(permission: str, authorization=Header(None)):
 
 
 @router.get(
-    '/?',
+    '',
     responses={
         200: {'model': models.PermissionsList, 'description': 'Success'},
         403: {'description': 'Authorization provided but invalid'}

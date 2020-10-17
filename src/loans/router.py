@@ -24,7 +24,7 @@ router.include_router(stats_router)
 
 
 @router.get(
-    '/?',
+    '',
     tags=['loans'],
     responses={
         200: {'description': 'Success', 'model': models.LoansResponse}
@@ -320,7 +320,7 @@ def index(
 
 
 @router.get(
-    '/threads/?',
+    '/threads',
     tags=['loans'],
     responses={
         200: {'description': 'Success', 'model': models.LoansResponse}
@@ -498,7 +498,7 @@ def loans_by_thread(
 
 
 @router.get(
-    '/{loan_id}/?',
+    '/{loan_id}',
     tags=['loans'],
     responses={
         200: {'description': 'Success', 'model': models.BasicLoanResponse},
