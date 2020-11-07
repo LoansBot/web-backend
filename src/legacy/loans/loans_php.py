@@ -122,6 +122,9 @@ def index_loans(
     repaid = _neg1_to_none(repaid)
     limit = _zero_to_none(limit)
 
+    if limit is None:
+        limit = 10
+
     attempt_request_cost = 5
     headers = {'x-request-cost': str(attempt_request_cost)}
     with LazyItgs() as itgs:
@@ -172,6 +175,7 @@ def index_loans(
 
         loans = Table('loans')
         if limit is None:
+            limit = 25
             itgs.read_cursor.execute(
                 Query.from_(loans)
                 .select(Count(Star()))
