@@ -1,7 +1,7 @@
 """This handles the deprecated endpoint /api/login.php
 """
 from fastapi import APIRouter, Request
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from legacy.helper import find_bearer_token, try_handle_deprecated_call
 from legacy.models import PHPErrorResponse, PHPError
