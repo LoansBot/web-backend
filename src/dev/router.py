@@ -46,12 +46,12 @@ def ratelimit(authorization: str = Header(None)):
 
         default_settings = ratelimit_helper.USER_RATELIMITS
         settings = lbshared.ratelimits.Settings(
-            collection_name=user_specific_settings.collection_name,
-            max_tokens=default_settings.ratelimit_max_tokens or user_specific_settings.max_tokens,
+            collection_name=default_settings.collection_name,
+            max_tokens=user_specific_settings.ratelimit_max_tokens or default_settings.max_tokens,
             refill_amount=(
-                default_settings.ratelimit_refill_amount or user_specific_settings.refill_amount),
+                user_specific_settings.ratelimit_refill_amount or default_settings.refill_amount),
             refill_time_ms=(
-                default_settings.ratelimit_refill_time_ms or user_specific_settings.refill_time_ms),
+                user_specific_settings.ratelimit_refill_time_ms or default_settings.refill_time_ms),
             strict=(
                 default_settings.strict
                 if user_specific_settings.ratelimit_strict is None
