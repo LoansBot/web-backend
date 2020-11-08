@@ -36,3 +36,13 @@ class PHPErrorResponse(BaseModel):
     success: bool = False
     result_type: str = 'FAILURE'
     errors: typing.List[PHPError]
+
+
+RATELIMIT_RESPONSE = PHPErrorResponse(
+    errors=[
+        PHPError(
+            error_type='RATELIMIT',
+            error_message='You are doing that too much. Try again later.'
+        )
+    ]
+)

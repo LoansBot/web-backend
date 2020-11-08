@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 @router.get(
-    '/?',
+    '',
     responses={
         '200': {'description': 'Success', 'model': models.EndpointsIndexResponse}
     }
@@ -535,7 +535,7 @@ def show_alternative(from_endpoint_slug: str, to_endpoint_slug: str,
 
 
 @router.put(
-    '/{slug}/?',
+    '/{slug}',
     responses={
         '200': {'description': 'Success'},
         '401': {'description': 'Authorization not provided'},
@@ -1170,7 +1170,7 @@ def put_endpoint_param(
 
 
 @router.delete(
-    '/{slug}/?',
+    '/{slug}',
     responses={
         '200': {'description': 'Success'},
         '401': {'description': 'Authorization not provided'},

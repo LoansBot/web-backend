@@ -1,8 +1,9 @@
 from fastapi import FastAPI, status
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from blanket_cors_middleware import BlanketCORSMiddleware
 from lblogging import Level
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
+from models import TestPostBody
 import json
 import secrets
 import users.router
@@ -15,6 +16,7 @@ import authentication_methods.router
 import trusts.router
 import endpoints.router
 import legacy.router
+import dev.router
 import traceback
 
 
@@ -33,6 +35,7 @@ app.include_router(loansbot.router.router, prefix='/loansbot')
 app.include_router(trusts.router.router, prefix='/trusts')
 app.include_router(endpoints.router.router, prefix='/endpoints')
 app.include_router(legacy.router.router, tags=['legacy'])
+app.include_router(dev.router.router, prefix='/dev', tags=['dev'])
 
 
 @app.exception_handler(Exception)
@@ -49,6 +52,30 @@ def handle_exception(request, exc):
 @app.get('/')
 def root():
     return {"message": "Hello World"}
+
+
+@app.get('/test_revalidate')
+def test_revalidate():
+    cache_control = 'public, max-age=60, must-revalidate'
+    return JSONResponse(
+        content={
+            'cache_control': cache_control
+        },
+        headers={
+            'Cache-Control': cache_control
+        },
+        status_code=200
+    )
+
+
+@app.post('/test_post')
+def test_post(payload: TestPostBody):
+    return JSONResponse(
+        content={
+            'payload': payload.payload
+        },
+        status_code=200
+    )
 
 
 @app.get('/test_log')

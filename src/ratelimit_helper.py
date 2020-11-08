@@ -28,8 +28,8 @@ USER_RATELIMITS = lbshared.ratelimits.Settings(
 GLOBAL_RATELIMITS = lbshared.ratelimits.Settings(
     collection_name=RATELIMIT_TOKENS_COLLECTION,
     max_tokens=1800,
-    refill_amount=1,
-    refill_time_ms=66,
+    refill_amount=20,
+    refill_time_ms=50,
     strict=False
 )
 """Global ratelimit settings"""

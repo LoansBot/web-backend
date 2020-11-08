@@ -27,7 +27,7 @@ router = APIRouter()
 
 
 @router.get(
-    '/{req_user_id}/authentication_methods/?',
+    '/{req_user_id}/authentication_methods',
     responses={
         200: {'description': 'Success', 'model': settings_models.UserAuthMethodsList},
         401: {'description': 'Authorization header missing'},
@@ -98,7 +98,7 @@ def show_authentication_methods(req_user_id: int, authorization=Header(None)):
 
 
 @router.post(
-    '/{req_user_id}/authentication_methods/?',
+    '/{req_user_id}/authentication_methods',
     responses={
         201: {'description': 'Success', 'model': settings_models.AuthMethodCreateResponse},
         401: {'description': 'Authorization header missing'},

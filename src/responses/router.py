@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get(
-    '/?',
+    '',
     tags=['responses'],
     responses={
         200: {'description': 'Success', 'model': models.ResponseIndex},
@@ -40,7 +40,7 @@ def root(authorization: str = Header(None)):
 
 
 @router.get(
-    '/{name}/?',
+    '/{name}',
     tags=['responses'],
     responses={
         200: {'description': 'Success', 'model': models.ResponseShow},
@@ -183,7 +183,7 @@ def histories(name: str, limit: int = 10, authorization: str = Header(None)):
 
 
 @router.post(
-    '/?',
+    '',
     tags=['responses'],
     responses={
         200: {'description': 'Success'},
@@ -275,7 +275,7 @@ def create_response(response: models.ResponseCreateArgs, authorization: str = He
 
 
 @router.post(
-    '/{name}/?',
+    '/{name}',
     tags=['responses'],
     responses={
         200: {'description': 'Success'},

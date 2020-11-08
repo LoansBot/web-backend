@@ -686,7 +686,7 @@ def delete_queue_item(item_uuid: str, authorization=Header(None)):
 
 
 @router.get(
-    '/comments/?',
+    '/comments',
     tags=['trusts'],
     responses={
         200: {'description': 'Success', 'model': UserTrustCommentListResponse},
@@ -1328,7 +1328,7 @@ def show_privileged_status(target_user_id: int, authorization=Header(None)):
 
 
 @router.put(
-    '/?',
+    '',
     tags=['trusts'],
     responses={
         200: {'description': 'Success'},
