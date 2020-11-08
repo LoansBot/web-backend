@@ -123,7 +123,7 @@ def index_loans(
     limit = _zero_to_none(limit)
 
     if limit is None:
-        limit = 10
+        limit = 100
 
     attempt_request_cost = 5
     headers = {'x-request-cost': str(attempt_request_cost)}
