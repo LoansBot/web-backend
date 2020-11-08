@@ -18,6 +18,16 @@ def global_ratelimit():
     """
     settings = ratelimit_helper.GLOBAL_RATELIMITS
     with LazyItgs() as itgs:
+        return _ratelimit_from_key_and_settings(itgs, 'global', settings)
+
+
+@router.get('/unauthed_ratelimit', response_model=dev.models.RatelimitResponse)
+def unauthed_ratelimit():
+    """This function returns the current state of the ratelimit for all
+    unauthenticated requests.
+    """
+    settings = ratelimit_helper.USER_RATELIMITS
+    with LazyItgs() as itgs:
         return _ratelimit_from_key_and_settings(itgs, 'None', settings)
 
 

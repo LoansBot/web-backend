@@ -175,7 +175,6 @@ def index_loans(
 
         loans = Table('loans')
         if limit is None:
-            limit = 25
             itgs.read_cursor.execute(
                 Query.from_(loans)
                 .select(Count(Star()))
@@ -184,14 +183,6 @@ def index_loans(
             (real_request_cost,) = itgs.read_cursor.fetchone()
         else:
             real_request_cost = limit
-
-        headers['x-request-cost'] = str(attempt_request_cost + real_request_cost)
-        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, real_request_cost):
-            return JSONResponse(
-                content=RATELIMIT_RESPONSE.dict(),
-                status_code=429,
-                headers=headers
-            )
 
         if format == 0:
             real_request_cost = math.ceil(math.log(real_request_cost + 1))
@@ -202,6 +193,14 @@ def index_loans(
             # We need to ensure the cost is greater than using the /users show
             # endpoint for getting usernames
             real_request_cost = 25 + math.ceil(real_request_cost * 4.1)
+
+        headers['x-request-cost'] = str(attempt_request_cost + real_request_cost)
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, real_request_cost):
+            return JSONResponse(
+                content=RATELIMIT_RESPONSE.dict(),
+                status_code=429,
+                headers=headers
+            )
 
         moneys = Table('moneys')
         principals = moneys.as_('principals')
