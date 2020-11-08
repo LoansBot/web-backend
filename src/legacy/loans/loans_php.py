@@ -75,7 +75,7 @@ from starlette.concurrency import run_until_first_complete
 from lbshared.lazy_integrations import LazyIntegrations as LazyItgs
 from lbshared.queries import convert_numbered_args
 from pypika import PostgreSQLQuery as Query, Table, Parameter, Order, Case
-from pypika.functions import Count, Star, Extract, Cast, Function
+from pypika.functions import Extract, Cast, Function
 from lbshared.pypika_funcs import Greatest
 import users.helper
 import ratelimit_helper
@@ -122,9 +122,6 @@ def index_loans(
     repaid = _neg1_to_none(repaid)
     limit = _zero_to_none(limit)
 
-    if limit is None:
-        limit = 100
-
     attempt_request_cost = 5
     headers = {'x-request-cost': str(attempt_request_cost)}
     with LazyItgs() as itgs:
@@ -158,6 +155,10 @@ def index_loans(
                 status_code=400
             )
 
+        if limit is None and user_id is None:
+            headers['x-limit-warning'] = 'unauthed requests limit=0 replaced with limit=100'
+            limit = 100
+
         if format not in (0, 1, 2, 3):
             return JSONResponse(
                 content=PHPErrorResponse(
@@ -175,14 +176,9 @@ def index_loans(
 
         loans = Table('loans')
         if limit is None:
-            itgs.read_cursor.execute(
-                Query.from_(loans)
-                .select(Count(Star()))
-                .get_sql()
-            )
-            (real_request_cost,) = itgs.read_cursor.fetchone()
+            real_request_cost = 100
         else:
-            real_request_cost = limit
+            real_request_cost = min(100, limit)
 
         if format == 0:
             real_request_cost = math.ceil(math.log(real_request_cost + 1))
