@@ -26,6 +26,10 @@ class RatelimitResponse(BaseModel):
       for this bucket.
     - `refill_amount (int)`: The number of tokens refilled every `refill_time_ms`
       within this bucket.
+    - `strict (bool)`: True if the user is punished for requests that exceed the
+      ratelimit by consuming all available tokens even though the request is
+      ultimately failed. False if the user is not punished for requests that are
+      ratelimited.
     """
     current_tokens: int = None
     last_refill: float = None
@@ -36,3 +40,4 @@ class RatelimitResponse(BaseModel):
     max_tokens: int
     refill_time_ms: int
     refill_amount: int
+    strict: bool
