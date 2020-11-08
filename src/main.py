@@ -16,6 +16,7 @@ import authentication_methods.router
 import trusts.router
 import endpoints.router
 import legacy.router
+import dev.router
 import traceback
 
 
@@ -34,6 +35,7 @@ app.include_router(loansbot.router.router, prefix='/loansbot')
 app.include_router(trusts.router.router, prefix='/trusts')
 app.include_router(endpoints.router.router, prefix='/endpoints')
 app.include_router(legacy.router.router, tags=['legacy'])
+app.include_router(dev.router.router, prefix='/dev', tags=['dev'])
 
 
 @app.exception_handler(Exception)
