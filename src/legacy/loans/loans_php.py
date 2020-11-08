@@ -575,7 +575,7 @@ class _ExtendedResponse(_CursorStreamedResponse):
         '{{"loan_id":{},"lender_id":{},"borrower_id":{},'
         '"principal_cents":{},"principal_repayment_cents":{},'
         '"unpaid":{},"created_at":{},"updated_at":{},'
-        '"thread":"https://reddit.com/comments/{}/rl/{}",'
+        '"thread":"https://www.reddit.com/comments/{}/rl/{}",'
         '"lender_name":"{}","borrower_name":"{}"}}'
     )
 

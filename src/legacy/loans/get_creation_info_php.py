@@ -149,7 +149,7 @@ def get_creation_info(loan_id: str, request: Request):
             if this_type == 0:
                 results[this_loan_id] = {
                     'type': 0,
-                    'thread': 'https://reddit.com/comments/{}/redditloans/{}'.format(
+                    'thread': 'https://www.reddit.com/comments/{}/redditloans/{}'.format(
                         this_parent_fullname[3:],
                         this_comment_fullname[3:]
                     )

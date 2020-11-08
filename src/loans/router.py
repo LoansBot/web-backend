@@ -334,7 +334,7 @@ def loans_by_thread(
     either as a url, in which the following two are examples of how the url
     must be structured:
 
-    - https://reddit.com/comments/{parent_id}/*
+    - https://www.reddit.com/comments/{parent_id}/*
     - https://www.reddit.com/r/*/comments/{parent_id}/*
 
     or by just by the fullname of the thread (e.g. `t3_foobar`). A comment may
