@@ -57,6 +57,8 @@ def login(auth: models.PasswordAuthentication):
     }
 )
 def logout(auth: models.TokenAuthentication):
+    """Revoke the given authentication token, ensuring that it no longer works.
+    """
     with LazyItgs(no_read_only=True) as itgs:
         info = helper.get_auth_info_from_token_auth(itgs, auth)
         if info is None:

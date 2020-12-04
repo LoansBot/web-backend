@@ -124,7 +124,7 @@ def get_creation_info(loan_id: int, request: Request):
             status_code=200,
             content=ResponseFormat(
                 request_thread=(
-                    'https://reddit.com/comments/{}/redditloans/{}'.format(
+                    'https://www.reddit.com/comments/{}/redditloans/{}'.format(
                         this_parent_fullname[3:],
                         this_comment_fullname[3:]
                     )

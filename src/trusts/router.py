@@ -476,13 +476,13 @@ def upsert_loan_delay(item: TrustLoanDelay, authorization=Header(None)):
         helper.create_server_trust_comment(
             itgs,
             (
-                'I will add [/u/{target}](https://reddit.com/u/{target}) '
+                'I will add [/u/{target}](https://www.reddit.com/u/{target}) '
                 'back to the queue with a review date no earlier than '
                 '{min_review_date} at {min_review_time} '
                 '{min_review_tz_pretty} ({min_review_tz}) when '
-                '[/u/{target}](https://reddit.com/u/{target}) reaches '
+                '[/u/{target}](https://www.reddit.com/u/{target}) reaches '
                 '{num_loans} completed loans as lender by the request of '
-                '[/u/{author}](https://reddit.com/u/{author}). They '
+                '[/u/{author}](https://www.reddit.com/u/{author}). They '
                 'currently have {num_completed_already} loans completed as '
                 'lender.'
             ).format(
@@ -565,7 +565,7 @@ def delete_loan_delay(req_user_id: int, authorization=Header(None)):
         helper.create_server_trust_comment(
             itgs,
             (
-                '[/u/{author}](https://reddit.com/u/{author}) removed '
+                '[/u/{author}](https://www.reddit.com/u/{author}) removed '
                 'the automated re-entry to the trust queue based on loans '
                 'completed as lender for this user.'
             ).format(

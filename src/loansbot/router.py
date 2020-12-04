@@ -48,7 +48,7 @@ def create_recheck(req: models.RecheckRequest, authorization=Header(None)):
 
         itgs.logger.print(
             Level.DEBUG,
-            'User {} queued a request on https://reddit.com/comments/{}/lb/{}',
+            'User {} queued a request on https://www.reddit.com/comments/{}/lb/{}',
             user_id, req.link_fullname[3:], req.comment_fullname[3:]
         )
 

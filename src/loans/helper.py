@@ -202,7 +202,7 @@ def get_loan_events(itgs, loan_id, perms):
                     None
                     if creation_type != 0
                     else
-                    'https://reddit.com/comments/{}/redditloans/{}'.format(
+                    'https://www.reddit.com/comments/{}/redditloans/{}'.format(
                         parent_fullname[3:], comment_fullname[3:]
                     )
                 )
