@@ -8,7 +8,7 @@ class AuthMethodPermissions(BaseModel):
 
 class AuthMethodHistoryItem(BaseModel):
     event_type: str
-    reason: str
+    reason: str = None
     username: str = None
     permission: str = None
     occurred_at: float
