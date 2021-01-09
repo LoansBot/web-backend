@@ -1371,6 +1371,9 @@ class EndpointsTests(unittest.TestCase):
                 )
             )
 
+    def test_no_open_redirect(self):
+        r = requests.get(HOST + '/endpoints/')
+        self.assertEqual(r.status_code, 404)
 
 if __name__ == '__main__':
     unittest.main()

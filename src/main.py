@@ -24,6 +24,7 @@ app = FastAPI(
     title='RedditLoans',
     description='See https://github.com/LoansBot'
 )
+app.router.redirect_slashes = False
 app.add_middleware(BlanketCORSMiddleware)
 app.include_router(users.router.router, prefix='/users')
 app.include_router(logs.router.router, prefix='/logs')
