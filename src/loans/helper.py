@@ -51,7 +51,7 @@ def calculate_etag(itgs, loan_id) -> str:
 
     (updated_at,) = row
 
-    raw_str = f'{loan_id}-{updated_at.timestamp()}'
+    raw_str = f'W/"{loan_id}-{updated_at.timestamp()}"'
     return hashlib.sha256(raw_str.encode('ASCII')).hexdigest()
 
 
