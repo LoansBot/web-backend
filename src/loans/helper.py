@@ -52,7 +52,8 @@ def calculate_etag(itgs, loan_id) -> str:
     (updated_at,) = row
 
     raw_str = f'{loan_id}-{updated_at.timestamp()}'
-    return hashlib.sha256(raw_str.encode('ASCII')).hexdigest()
+    hashed_str = hashlib.sha256(raw_str.encode('ASCII')).hexdigest()
+    return f'W/"{hashed_str}"'
 
 
 def get_basic_loan_info(itgs, loan_id, perms):
