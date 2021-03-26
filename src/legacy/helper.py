@@ -211,8 +211,8 @@ def try_handle_deprecated_call(
                     scheme=host.scheme,
                     netloc=host.netloc,
                     path=host.path,
-                    query_params=host.query_params,
-                    opt_ambersand='' if host.query_params == '' else '&',
+                    query_params=host.query,
+                    opt_ambersand='' if host.query == '' else '&',
                     opt_hashtag='' if host.fragment == '' else '#',
                     fragment=host.fragment,
                     slug=endpoint_slug
