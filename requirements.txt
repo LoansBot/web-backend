@@ -32,7 +32,7 @@ PyPika==0.39.1
 python-multipart==0.0.5
 pytypeutils==0.0.1
 pytz==2020.1
-PyYAML==5.3
+PyYAML==5.4
 requests==2.23.0
 Rx==1.6.1
 six==1.14.0
