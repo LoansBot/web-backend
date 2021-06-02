@@ -6,6 +6,10 @@ if [ ! -f /usr/local/src/openssl-1.1.1k.tar.gz ] || [ ! ls -ltra /usr/bin/python
     # available. We also update python here to latest since we're building
     # from source anyway
     sudo yum remove python3 -y
+    rm -r /usr/local/src/openssl-1.1.1k
+    rm /usr/local/src/openssl-1.1.1k.tar.gz
+    rm -r /usr/local/src/Python3.9.5
+    rm /usr/local/src/Python3.9.5.tar.gz
 
     cd /usr/local/src
     sudo wget https://www.openssl.org/source/openssl-1.1.1k.tar.gz
