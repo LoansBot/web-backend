@@ -33,7 +33,7 @@ then
     sudo ./configure --prefix=/usr/local/python3.9 --enable-optimizations
     sudo make
     sudo make install
-    sudo ln -s /usr/local/python3.9/bin/python3.9 /usr/bin/python3 python3-devel
+    sudo ln -s /usr/local/python3.9/bin/python3.9 /usr/bin/python3
 fi
 sudo python3 -m pip install --upgrade pip
 sudo python3 -m pip install supervisor
