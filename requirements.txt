@@ -39,6 +39,6 @@ six==1.14.0
 sqlparse==0.3.1
 starlette==0.13.6
 ujson==1.35
-urllib3==1.25.8
+urllib3==1.26.5
 uvicorn==0.11.7
 websockets==8.1
