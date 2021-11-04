@@ -98,7 +98,7 @@ def check_ratelimit(itgs, user_id, permissions, cost, settings=None) -> bool:
     acceptable = True
     global_applies = True
 
-    user_specific_settings = USER_RATELIMITS
+    user_specific_settings = settings or USER_RATELIMITS
     if settings is None and user_id is not None:
         settings = get_settings(itgs, user_id)
         global_applies = settings.global_ratelimit_applies
