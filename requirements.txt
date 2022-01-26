@@ -49,7 +49,7 @@ starlette==0.14.2
 supervisor==4.2.2
 terminaltables==3.1.0
 typing-extensions==3.10.0.2
-ujson==4.1.0
+ujson==5.1.0
 urllib3==1.26.6
 uvicorn==0.15.0
 websockets==10.0
