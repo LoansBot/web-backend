@@ -36,7 +36,7 @@ class ClaimRequestArgs(BaseModel):
 
     @validator('username')
     def matches_username_regex(cls, v):
-        if not re.match(r'[A-Za-z0-9_-]{3,20}', v):
+        if not re.match(r'^[A-Za-z0-9_-]{3,20}$', v):
             raise ValueError('be a valid username')
         return v
 
