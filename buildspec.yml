@@ -4,7 +4,6 @@ phases:
   pre_build:
     run-as: root
     commands:
-      - yum -y install git
       - git clone --depth 1 https://github.com/LoansBot/logging.git
       - git clone --depth 1 https://github.com/LoansBot/shared.git
       - mv logging/requirements.txt logging/logging-requirements.txt
