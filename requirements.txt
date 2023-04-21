@@ -44,7 +44,7 @@ requests==2.26.0
 Rx==3.2.0
 six==1.16.0
 sniffio==1.2.0
-sqlparse==0.4.2
+sqlparse==0.4.4
 starlette==0.14.2
 supervisor==4.2.2
 terminaltables==3.1.0
