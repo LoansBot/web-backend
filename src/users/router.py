@@ -21,17 +21,13 @@ router.include_router(demographics_router)
 
 
 @router.post(
-    '/login',
-    tags=['users', 'auth'],
+    "/login",
+    tags=["users", "auth"],
     responses={
-        200: {'model': models.TokenResponse},
-        400: {'description': 'Username or password too long'},
-        403: {
-            'description': (
-                'The provided authentication could not be identified'
-            )
-        }
-    }
+        200: {"model": models.TokenResponse},
+        400: {"description": "Username or password too long"},
+        403: {"description": ("The provided authentication could not be identified")},
+    },
 )
 def login(auth: models.PasswordAuthentication):
     if len(auth.username) > 32 or len(auth.password) > 255:
@@ -49,79 +45,80 @@ def login(auth: models.PasswordAuthentication):
 
 
 @router.post(
-    '/logout',
-    tags=['users', 'auth'],
+    "/logout",
+    tags=["users", "auth"],
     responses={
-        200: {'description': 'Logout successful'},
-        403: {'description': 'Token authentication failed'}
-    }
+        200: {"description": "Logout successful"},
+        403: {"description": "Token authentication failed"},
+    },
 )
 def logout(auth: models.TokenAuthentication):
-    """Revoke the given authentication token, ensuring that it no longer works.
-    """
+    """Revoke the given authentication token, ensuring that it no longer works."""
     with LazyItgs(no_read_only=True) as itgs:
         info = helper.get_auth_info_from_token_auth(itgs, auth)
         if info is None:
             return Response(status_code=403)
         auth_id = info[0]
 
-        authtokens = Table('authtokens')
+        authtokens = Table("authtokens")
         itgs.write_cursor.execute(
-            Query
-            .from_(authtokens)
+            Query.from_(authtokens)
             .delete()
-            .where(authtokens.id == Parameter('%s'))
+            .where(authtokens.id == Parameter("%s"))
             .get_sql(),
-            (auth_id,)
+            (auth_id,),
         )
         itgs.write_conn.commit()
         return Response(status_code=200)
 
 
 @router.get(
-    '/lookup',
-    tags=['users'],
+    "/lookup",
+    tags=["users"],
     responses={
-        200: {'description': 'Success', 'model': models.UserLookupResponse},
-        404: {'description': 'No such user exists or you cannot see them'}
-    }
+        200: {"description": "Success", "model": models.UserLookupResponse},
+        404: {"description": "No such user exists or you cannot see them"},
+    },
 )
 def lookup(q: str, authorization=Header(None)):
     """Allows looking up a user id by a username. q is the username to lookup"""
     request_cost = 1
 
-    headers = {'x-request-cost': str(request_cost)}
+    headers = {"x-request-cost": str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = helper.get_permissions_from_header(
-            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS)
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
+        )
 
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
             return Response(status_code=429, headers=headers)
 
-        users = Table('users')
+        users = Table("users")
         itgs.read_cursor.execute(
-            Query.from_(users).select(users.id)
-            .where(users.username == Parameter('%s')).get_sql(),
-            (q.lower(),)
+            Query.from_(users)
+            .select(users.id)
+            .where(users.username == Parameter("%s"))
+            .get_sql(),
+            (q.lower(),),
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
             return Response(status_code=404, headers=headers)
 
-        headers['Cache-Control'] = 'public, max-age=604800, immutable'
+        headers["Cache-Control"] = "public, max-age=604800, immutable"
         return JSONResponse(
             status_code=200,
             content=models.UserLookupResponse(id=row[0]).dict(),
-            headers=headers
+            headers=headers,
         )
 
 
 @router.get(
-    '/suggest',
+    "/suggest",
     responses={
-        200: {'description': 'Success', 'model': models.UserSuggestResponse},
-        204: {'description': 'Success; no suggestions'}
-    }
+        200: {"description": "Success", "model": models.UserSuggestResponse},
+        204: {"description": "Success; no suggestions"},
+    },
 )
 def suggest(q: str, limit: int = 3, authorization=Header(None)):
     """Suggest some usernames that partially match the query. q is the partial
@@ -130,12 +127,12 @@ def suggest(q: str, limit: int = 3, authorization=Header(None)):
         return JSONResponse(
             status_code=422,
             content={
-                'detail': {
-                    'loc': ['limit'],
-                    'msg': 'Must be positive',
-                    'type': 'range_error'
+                "detail": {
+                    "loc": ["limit"],
+                    "msg": "Must be positive",
+                    "type": "range_error",
                 }
-            }
+            },
         )
 
     # This is actually moderately expensive since we don't use the correct
@@ -143,21 +140,23 @@ def suggest(q: str, limit: int = 3, authorization=Header(None)):
     # speed it up if this endpoint is problematic, so we'll under-charge here.
     request_cost = 10 + limit
 
-    headers = {'x-request-cost': str(request_cost)}
+    headers = {"x-request-cost": str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = helper.get_permissions_from_header(
-            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS)
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
+        )
 
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
             return Response(status_code=429, headers=headers)
 
-        users = Table('users')
+        users = Table("users")
         itgs.read_cursor.execute(
-            Query.from_(users).select(users.username)
-            .where(users.username.like(Parameter('%s')))
+            Query.from_(users)
+            .select(users.username)
+            .where(users.username.like(Parameter("%s")))
             .limit(limit)
             .get_sql(),
-            ('%' + q.lower() + '%',)
+            ("%" + q.lower() + "%",),
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
@@ -167,21 +166,26 @@ def suggest(q: str, limit: int = 3, authorization=Header(None)):
             result.append(row[0])
             row = itgs.read_cursor.fetchone()
 
-        headers['Cache-Control'] = 'public, max-age=86400, stale-while-revalidate=518400'
+        headers[
+            "Cache-Control"
+        ] = "public, max-age=86400, stale-while-revalidate=518400"
         return JSONResponse(
             status_code=200,
             content=models.UserSuggestResponse(suggestions=result).dict(),
-            headers=headers
+            headers=headers,
         )
 
 
 @router.get(
-    '/{user_id}/me',
-    tags=['users'],
+    "/{user_id}/me",
+    tags=["users"],
     responses={
-        200: {'description': 'Authtoken accepted', 'model': models.UserShowSelfResponse},
-        403: {'description': 'Token authentication failed'}
-    }
+        200: {
+            "description": "Authtoken accepted",
+            "model": models.UserShowSelfResponse,
+        },
+        403: {"description": "Token authentication failed"},
+    },
 )
 def me(user_id: int, authorization: str = Header(None)):
     """Get an extremely small amount of information about the user specified
@@ -193,19 +197,19 @@ def me(user_id: int, authorization: str = Header(None)):
 
     with LazyItgs() as itgs:
         info = helper.get_auth_info_from_token_auth(
-            itgs, models.TokenAuthentication(token=authtoken),
-            require_user_id=user_id
+            itgs, models.TokenAuthentication(token=authtoken), require_user_id=user_id
         )
         if info is None:
             return Response(status_code=403)
         auth_id, authed_user_id, expires_at = info[:3]
 
-        users = Table('users')
+        users = Table("users")
         itgs.read_cursor.execute(
-            Query.from_(users).select(users.username)
-            .where(users.id == Parameter('%s'))
+            Query.from_(users)
+            .select(users.username)
+            .where(users.id == Parameter("%s"))
             .get_sql(),
-            (authed_user_id,)
+            (authed_user_id,),
         )
         (username,) = itgs.read_cursor.fetchone()
 
@@ -213,19 +217,20 @@ def me(user_id: int, authorization: str = Header(None)):
             status_code=200,
             content=models.UserShowSelfResponse(username=username).dict(),
             headers={
-                'Cache-Control': helper.cache_control_for_expires_at(
-                    expires_at, try_refresh_every=60)
-            }
+                "Cache-Control": helper.cache_control_for_expires_at(
+                    expires_at, try_refresh_every=60
+                )
+            },
         )
 
 
 @router.get(
-    '/{user_id}/permissions',
-    tags=['users', 'auth'],
+    "/{user_id}/permissions",
+    tags=["users", "auth"],
     responses={
-        200: {'description': 'Success', 'model': models.UserPermissions},
-        403: {'description': 'Token authentication failed'}
-    }
+        200: {"description": "Success", "model": models.UserPermissions},
+        403: {"description": "Token authentication failed"},
+    },
 )
 def check_permissions(user_id: int, authorization: str = Header(None)):
     """Checks the given authorization tokens permission level. This should NOT
@@ -244,43 +249,41 @@ def check_permissions(user_id: int, authorization: str = Header(None)):
 
     with LazyItgs() as itgs:
         info = helper.get_auth_info_from_token_auth(
-            itgs, models.TokenAuthentication(token=authtoken),
-            require_user_id=user_id
+            itgs, models.TokenAuthentication(token=authtoken), require_user_id=user_id
         )
         if info is None:
             return Response(status_code=403)
         authid = info[0]
         expires_at = info[2]
 
-        perms = Table('permissions')
-        auth_perms = Table('authtoken_permissions')
+        perms = Table("permissions")
+        auth_perms = Table("authtoken_permissions")
         itgs.read_cursor.execute(
             Query.from_(auth_perms)
             .select(perms.name)
-            .join(perms).on(perms.id == auth_perms.permission_id)
-            .where(auth_perms.authtoken_id == Parameter('%s'))
+            .join(perms)
+            .on(perms.id == auth_perms.permission_id)
+            .where(auth_perms.authtoken_id == Parameter("%s"))
             .get_sql(),
-            (authid,)
+            (authid,),
         )
         res = itgs.read_cursor.fetchall()
         permissions = [row[0] for row in res]
         return JSONResponse(
             status_code=200,
             content=models.UserPermissions(permissions=permissions).dict(),
-            headers={
-                'Cache-Control': helper.cache_control_for_expires_at(expires_at)
-            }
+            headers={"Cache-Control": helper.cache_control_for_expires_at(expires_at)},
         )
 
 
 @router.post(
-    '/request_claim_token',
-    tags=['users', 'auth'],
+    "/request_claim_token",
+    tags=["users", "auth"],
     responses={
-        200: {'description': 'Claim token sent'},
-        400: {'description': 'Arguments invalid', 'model': main_models.ErrorResponse},
-        429: {'description': 'You are doing that too much'}
-    }
+        200: {"description": "Claim token sent"},
+        400: {"description": "Arguments invalid", "model": main_models.ErrorResponse},
+        429: {"description": "You are doing that too much"},
+    },
 )
 def request_claim_token(args: models.ClaimRequestArgs):
     """Sends a link to the reddit user with the given username which can be
@@ -290,38 +293,44 @@ def request_claim_token(args: models.ClaimRequestArgs):
     if len(username) > 32:
         return JSONResponse(
             status_code=400,
-            content=main_models.ErrorResponse(message='username invalid').dict()
+            content=main_models.ErrorResponse(message="username invalid").dict(),
         )
 
     with LazyItgs(no_read_only=True) as itgs:
         if not security.verify_captcha(itgs, token):
             return JSONResponse(
                 status_code=400,
-                content=main_models.ErrorResponse(message='captcha invalid').dict()
+                content=main_models.ErrorResponse(message="captcha invalid").dict(),
             )
 
         if not security.ratelimit(
-                itgs, 'MAX_REQUEST_CLAIM_TOKEN', 'request_claim_token',
-                defaults={60: 5, 600: 30}):
+            itgs,
+            "MAX_REQUEST_CLAIM_TOKEN",
+            "request_claim_token",
+            defaults={60: 5, 600: 30},
+        ):
             return Response(status_code=429)
 
         if not security.ratelimit(
-                itgs, 'MAX_REQUEST_CLAIM_TOKEN_INDIV',
-                f'request_claim_token_{username}',
-                defaults={
-                    int(timedelta(minutes=2).total_seconds()): 1,
-                    int(timedelta(minutes=10).total_seconds()): 2,
-                    int(timedelta(days=1).total_seconds()): 3,
-                    int(timedelta(weeks=1).total_seconds()): 5
-                }):
+            itgs,
+            "MAX_REQUEST_CLAIM_TOKEN_INDIV",
+            f"request_claim_token_{username}",
+            defaults={
+                int(timedelta(minutes=2).total_seconds()): 1,
+                int(timedelta(minutes=10).total_seconds()): 2,
+                int(timedelta(days=1).total_seconds()): 3,
+                int(timedelta(weeks=1).total_seconds()): 5,
+            },
+        ):
             return Response(status_code=429)
 
-        users = Table('users')
+        users = Table("users")
         itgs.read_cursor.execute(
-            Query.from_(users).select(users.id)
-            .where(users.username == Parameter('%s'))
+            Query.from_(users)
+            .select(users.id)
+            .where(users.username == Parameter("%s"))
             .get_sql(),
-            (username,)
+            (username,),
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
@@ -330,45 +339,53 @@ def request_claim_token(args: models.ClaimRequestArgs):
             user_id = row[0]
 
         token = helper.create_claim_token(itgs, user_id, commit=True)
-        send_queue = os.environ['AMQP_REDDIT_PROXY_QUEUE']
-        url_root = os.environ['ROOT_DOMAIN']
+        send_queue = os.environ["AMQP_REDDIT_PROXY_QUEUE"]
+        url_root = os.environ["ROOT_DOMAIN"]
         itgs.channel.queue_declare(queue=send_queue)
         itgs.channel.basic_publish(
-            exchange='',
+            exchange="",
             routing_key=send_queue,
-            body=json.dumps({
-                'type': 'compose',
-                'response_queue': os.environ['AMQP_RESPONSE_QUEUE'],
-                'uuid': token,
-                'version_utc_seconds': float(os.environ['APP_VERSION_NUMBER']),
-                'sent_at': time.time(),
-                'args': {
-                    'recipient': username,
-                    'subject': 'RedditLoans: Claim your account',
-                    'body': (
-                        f'To claim your account on {url_root} '
-                        ' by proving you own this reddit account, '
-                        f'[click here]({url_root}/claim.html?user_id={user_id}&token={token})'
-                        '\n\n'
-                        'If you did not request this, ignore this message '
-                        'and feel free to block future pms by clicking '
-                        '"block user" below this message.'
-                    )
+            body=json.dumps(
+                {
+                    "type": "compose",
+                    "response_queue": os.environ["AMQP_RESPONSE_QUEUE"],
+                    "uuid": token,
+                    "version_utc_seconds": float(os.environ["APP_VERSION_NUMBER"]),
+                    "sent_at": time.time(),
+                    "args": {
+                        "recipient": username,
+                        "subject": "RedditLoans: Claim your account",
+                        "body": (
+                            f"To claim your account on {url_root} "
+                            " by proving you own this reddit account, "
+                            f"[click here]({url_root}/claim.html?user_id={user_id}&token={token})"
+                            "\n\n"
+                            "If you did not request this, ignore this message "
+                            "and feel free to block future pms by clicking "
+                            '"block user" below this message.'
+                        ),
+                    },
                 }
-            }).encode('utf-8')
+            ).encode("utf-8"),
         )
     return Response(status_code=200)
 
 
 @router.post(
-    '/claim',
-    tags=['users', 'auth'],
+    "/claim",
+    tags=["users", "auth"],
     responses={
-        200: {'description': 'Password set'},
-        400: {'description': 'Password or recatpcha invalid', 'model': main_models.ErrorResponse},
-        403: {'description': 'Invalid or expired claim token', 'model': main_models.ErrorResponse},
-        429: {'description': 'You are doing that too much'}
-    }
+        200: {"description": "Password set"},
+        400: {
+            "description": "Password or recatpcha invalid",
+            "model": main_models.ErrorResponse,
+        },
+        403: {
+            "description": "Invalid or expired claim token",
+            "model": main_models.ErrorResponse,
+        },
+        429: {"description": "You are doing that too much"},
+    },
 )
 def set_human_passauth_with_claim_token(args: models.ClaimArgs):
     """Sets the human password for the given user to the given password using
@@ -378,8 +395,8 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
         return JSONResponse(
             status_code=400,
             content=main_models.ErrorResponse(
-                message='Password must be more than 5 and less than 256 characters'
-            ).dict()
+                message="Password must be more than 5 and less than 256 characters"
+            ).dict(),
         )
 
     with LazyItgs(no_read_only=True) as itgs:
@@ -387,24 +404,26 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
             return JSONResponse(
                 status_code=403,
                 content=main_models.ErrorResponse(
-                    message='Invalid captcha provided.'
-                ).dict()
+                    message="Invalid captcha provided."
+                ).dict(),
             )
 
         if not security.ratelimit(
-                itgs, 'MAX_USE_CLAIM_TOKEN', 'use_claim_token',
-                defaults={60: 5, 600: 30}):
+            itgs, "MAX_USE_CLAIM_TOKEN", "use_claim_token", defaults={60: 5, 600: 30}
+        ):
             return Response(status_code=429)
 
         if not security.ratelimit(
-                itgs, 'MAX_USE_CLAIM_TOKEN_INDIV',
-                f'use_claim_token_{args.user_id}',
-                defaults={
-                    int(timedelta(minutes=2).total_seconds()): 1,
-                    int(timedelta(minutes=10).total_seconds()): 2,
-                    int(timedelta(days=1).total_seconds()): 3,
-                    int(timedelta(weeks=1).total_seconds()): 5
-                }):
+            itgs,
+            "MAX_USE_CLAIM_TOKEN_INDIV",
+            f"use_claim_token_{args.user_id}",
+            defaults={
+                int(timedelta(minutes=2).total_seconds()): 1,
+                int(timedelta(minutes=10).total_seconds()): 2,
+                int(timedelta(days=1).total_seconds()): 3,
+                int(timedelta(weeks=1).total_seconds()): 5,
+            },
+        ):
             return Response(status_code=429)
 
         if not helper.attempt_consume_claim_token(itgs, args.user_id, args.claim_token):
@@ -413,29 +432,27 @@ def set_human_passauth_with_claim_token(args: models.ClaimArgs):
             itgs, args.user_id, args.password, commit=True
         )
 
-        if action == 'INSERT':
-            itgs.channel.exchange_declare('events', 'topic')
+        if action == "INSERT":
+            itgs.channel.exchange_declare("events", "topic")
             itgs.channel.basic_publish(
-                'events',
-                'user.signup',
-                json.dumps({'user_id': args.user_id})
+                "events", "user.signup", json.dumps({"user_id": args.user_id})
             )
 
     return Response(status_code=200)
 
 
 @router.get(
-    '/{req_user_id}',
-    tags=['users'],
+    "/{req_user_id}",
+    tags=["users"],
     responses={
-        200: {'description': 'Success', 'model': models.UserShowResponse},
-        404: {'description': 'No such user exists or you cannot see them.'}
-    }
+        200: {"description": "Success", "model": models.UserShowResponse},
+        404: {"description": "No such user exists or you cannot see them."},
+    },
 )
 def show(req_user_id: int, authorization=Header(None)):
     request_cost = 1
 
-    headers = {'x-request-cost': str(request_cost)}
+    headers = {"x-request-cost": str(request_cost)}
     with LazyItgs() as itgs:
         user_id, _, perms = helper.get_permissions_from_header(
             itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
@@ -444,19 +461,96 @@ def show(req_user_id: int, authorization=Header(None)):
         if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
             return Response(status_code=429, headers=headers)
 
-        users = Table('users')
+        users = Table("users")
         itgs.read_cursor.execute(
-            Query.from_(users).select(users.username)
-            .where(users.id == Parameter('%s')).get_sql(),
-            (req_user_id,)
+            Query.from_(users)
+            .select(users.username)
+            .where(users.id == Parameter("%s"))
+            .get_sql(),
+            (req_user_id,),
         )
         row = itgs.read_cursor.fetchone()
         if row is None:
             return Response(status_code=404, headers=headers)
 
-        headers['Cache-Control'] = 'public, max-age=604800, immutable'
+        headers["Cache-Control"] = "public, max-age=604800, immutable"
         return JSONResponse(
             status_code=200,
             content=models.UserShowResponse(username=row[0]).dict(),
-            headers=headers
+            headers=headers,
+        )
+
+
+@router.get(
+    "/{req_user_id}/stats",
+    tags=["users"],
+    responses={
+        200: {"description": "Success", "model": models.UserStatsResponse},
+        404: {"description": "No such user exists or you cannot see them."},
+    },
+)
+def show_stats(req_user_id: int, authorization=Header(None)):
+    """Fetches the statistics on the user with the given id. This endpoint
+    is somewhat expensive and somewhat time-sensitive. It uses a 1 hour
+    cache control setting and a request cost of 25.
+    """
+    request_cost = 25
+
+    headers = {"x-request-cost": str(request_cost)}
+    with LazyItgs() as itgs:
+        user_id, _, perms = helper.get_permissions_from_header(
+            itgs, authorization, ratelimit_helper.RATELIMIT_PERMISSIONS
+        )
+
+        if not ratelimit_helper.check_ratelimit(itgs, user_id, perms, request_cost):
+            return Response(status_code=429, headers=headers)
+
+        # Total loans as lender
+        itgs.read_cursor.execute(
+            "SELECT COUNT(*) FROM loans WHERE lender_id = %s", (req_user_id,)
+        )
+        total_loans_as_lender = itgs.read_cursor.fetchone()[0]
+
+        if total_loans_as_lender == 0:
+            itgs.read_cursor.execute(
+                "SELECT 1 FROM users WHERE id = %s", (req_user_id,)
+            )
+            if itgs.read_cursor.fetchone() is None:
+                return Response(status_code=404, headers=headers)
+
+        # Total loans as lender last 90 days
+        itgs.read_cursor.execute(
+            """
+            SELECT COUNT(*) FROM loans
+            WHERE
+                lender_id = %s
+                AND created_at > NOW() - INTERVAL '90 days'
+            """,
+            (req_user_id,),
+        )
+        total_loans_as_lender_last_90_days = itgs.read_cursor.fetchone()[0]
+
+        # First loan as lender at
+        itgs.read_cursor.execute(
+            """
+            SELECT CAST((EXTRACT(EPOCH FROM created_at) * 1000) AS bigint) FROM loans
+            WHERE lender_id = %s
+            ORDER BY created_at ASC
+            LIMIT 1
+            """,
+            (req_user_id,),
+        )
+        first_loan_as_lender_at = itgs.read_cursor.fetchone()
+        if first_loan_as_lender_at is not None:
+            first_loan_as_lender_at = first_loan_as_lender_at[0]
+
+        headers["Cache-Control"] = "public, max-age=3600, stale-while-revalidate=3600"
+        return JSONResponse(
+            status_code=200,
+            content=models.UserStatsResponse(
+                total_loans_as_lender=total_loans_as_lender,
+                total_loans_as_lender_last_90_days=total_loans_as_lender_last_90_days,
+                first_loan_as_lender_at=first_loan_as_lender_at,
+            ).dict(),
+            headers=headers,
         )
