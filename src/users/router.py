@@ -507,7 +507,8 @@ def show_stats(req_user_id: int, authorization=Header(None)):
 
         # Total loans as lender
         itgs.read_cursor.execute(
-            "SELECT COUNT(*) FROM loans WHERE lender_id = %s", (req_user_id,)
+            "SELECT COUNT(*) FROM loans WHERE deleted_at IS NULL AND lender_id = %s",
+            (req_user_id,),
         )
         total_loans_as_lender = itgs.read_cursor.fetchone()[0]
 
@@ -523,7 +524,8 @@ def show_stats(req_user_id: int, authorization=Header(None)):
             """
             SELECT COUNT(*) FROM loans
             WHERE
-                lender_id = %s
+                deleted_at IS NULL
+                AND lender_id = %s
                 AND created_at > NOW() - INTERVAL '90 days'
             """,
             (req_user_id,),
@@ -534,7 +536,7 @@ def show_stats(req_user_id: int, authorization=Header(None)):
         itgs.read_cursor.execute(
             """
             SELECT CAST((EXTRACT(EPOCH FROM created_at) * 1000) AS bigint) FROM loans
-            WHERE lender_id = %s
+            WHERE deleted_at IS NULL AND lender_id = %s
             ORDER BY created_at ASC
             LIMIT 1
             """,
