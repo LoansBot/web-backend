@@ -34,6 +34,7 @@ def index(
         loan_id: int = None,
         after_id: int = None, before_id: int = None,
         after_time: int = None, before_time: int = None,
+        after_unpaid_at: int = None, before_unpaid_at: int = None,
         borrower_name: str = None, lender_name: str = None, user_operator: str = 'AND',
         unpaid: bool = None, repaid: bool = None,
         include_deleted: bool = False, order: str = 'natural', limit: int = 25,
@@ -66,7 +67,7 @@ def index(
     if lender_name is None or borrower_name is None:
         user_operator = 'AND'
 
-    acceptable_orders = ('natural', 'date_desc', 'date_asc', 'id_desc', 'id_asc')
+    acceptable_orders = ('natural', 'date_desc', 'date_asc', 'unpaid_at_desc', 'unpaid_at_asc', 'id_desc', 'id_asc')
     if order not in acceptable_orders:
         return JSONResponse(
             status_code=422,
@@ -194,6 +195,16 @@ def index(
             query = query.where(loans.created_at < Parameter(f'${len(args) + 1}'))
             args.append(before_datetime)
 
+        if after_unpaid_at is not None:
+            after_unpaid_at_datetime = datetime.fromtimestamp(after_unpaid_at)
+            query = query.where(loans.unpaid_at > Parameter(f'${len(args) + 1}'))
+            args.append(after_unpaid_at_datetime)
+        
+        if before_unpaid_at is not None:
+            before_unpaid_at_datetime = datetime.fromtimestamp(before_unpaid_at)
+            query = query.where(loans.unpaid_at < Parameter(f'${len(args) + 1}'))
+            args.append(before_unpaid_at_datetime)
+
         if borrower_name is not None:
             if 'borrowers' not in joins:
                 query = query.join(borrowers).on(borrowers.id == loans.borrower_id)
@@ -238,6 +249,10 @@ def index(
             query = query.orderby(loans.created_at, order=Order.desc)
         elif order == 'date_asc':
             query = query.orderby(loans.created_at)
+        elif order == 'unpaid_at_desc':
+            query = query.orderby(loans.unpaid_at, order=Order.desc)
+        elif order == 'unpaid_at_asc':
+            query = query.orderby(loans.unpaid_at)
         elif order == 'id_desc':
             query = query.orderby(loans.id, order=Order.desc)
         elif order == 'id_asc':
@@ -254,6 +269,8 @@ def index(
                 before_id: {before_id},
                 after_time: {after_time},
                 before_time: {before_time},
+                after_unpaid_at: {after_unpaid_at},
+                before_unpaid_at: {before_unpaid_at},
                 borrower_name: {repr(borrower_name)},
                 lender_name: {repr(lender_name)},
                 user_operator: '{user_operator}'; (accepts ('AND', 'OR')),
