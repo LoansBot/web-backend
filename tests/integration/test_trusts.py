@@ -226,6 +226,69 @@ class TrustsTests(unittest.TestCase):
             )
             self.assertEqual(r.status_code, 404)
 
+    def test_user_deleted_after_in_queue(self):
+        with helper.user_with_token(
+            self.conn,
+            self.cursor,
+            username='foo',
+            add_perms=[
+                'view-trust-queue',
+                'add-trust-queue',
+                'edit-trust-queue',
+                'remove-trust-queue',
+            ],
+        ) as (user_id, token):
+            self.cursor.execute('SELECT 1 FROM users WHERE username=%s', ('foobar',))
+            row = self.cursor.fetchone()
+            self.assertIsNone(row)
+
+            headers = {'authorization': f'bearer {token}', 'cache-control': 'no-store'}
+            og_review_at = time.time()
+            r = requests.post(
+                HOST + '/trusts/queue',
+                json={'username': 'foobar', 'review_at': og_review_at},
+                headers=headers,
+            )
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            body = r.json()
+            self.assertIsInstance(body, dict)
+            self.assertEqual(body.get('username'), 'foobar')
+            self.assertAlmostEqual(body.get('review_at'), og_review_at, delta=1)
+            self.assertIsInstance(body.get('uuid'), str)
+            uuid = body.get('uuid')
+
+            self.cursor.execute('SELECT 1 FROM users WHERE username=%s', ('foobar',))
+            row = self.cursor.fetchone()
+            self.assertIsNotNone(row)
+
+            r = requests.get(HOST + '/trusts/queue', headers=headers)
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            body = r.json()
+            self.assertIsInstance(body, dict)
+            self.assertIsInstance(body.get('queue'), list)
+            self.assertEqual(len(body['queue']), 1)
+            self.assertEqual(body['queue'][0]['uuid'], uuid)
+
+            self.cursor.execute('DELETE FROM users WHERE username=%s', ('foobar',))
+            self.conn.commit()
+            self.assertEqual(self.cursor.rowcount, 1)
+
+            r = requests.get(HOST + '/trusts/queue', headers=headers)
+            r.raise_for_status()
+            self.assertEqual(r.status_code, 200)
+
+            body = r.json()
+            self.assertIsInstance(body, dict)
+            self.assertIsInstance(body.get('queue'), list)
+            self.assertEqual(len(body['queue']), 0)
+
+            r = requests.get(HOST + f'/trusts/queue/{uuid}', headers=headers)
+            self.assertEqual(r.status_code, 404)
+
     def test_insert_new_user_loan_delay_200(self):
         with helper.user_with_token(
                 self.conn, self.cursor,
