@@ -274,6 +274,7 @@ class TrustsTests(unittest.TestCase):
             self.assertEqual(body['queue'][0]['uuid'], uuid)
 
             self.cursor.execute('DELETE FROM users WHERE username=%s', ('foobar',))
+            self.conn.commit()
             self.assertEqual(self.cursor.rowcount, 1)
 
             r = requests.get(HOST + '/trusts/queue', headers=headers)
