@@ -103,50 +103,73 @@ def index_queue(
         if not has_view_trust_permission:
             return Response(status_code=403, headers=headers)
 
-        result_raw = delayed_queue.index_events(
-            itgs, delayed_queue.QUEUE_TYPES['trust'],
-            limit + 1,
-            before_time=(
-                None if before_review_at is None
-                else datetime.fromtimestamp(before_review_at)
-            ),
-            after_time=(
-                None if after_review_at is None
-                else datetime.fromtimestamp(after_review_at)
-            ),
-            order=order,
-            integrity_failures='delete_and_commit'
-        )
+        while True:
+            result_raw = delayed_queue.index_events(
+                itgs, delayed_queue.QUEUE_TYPES['trust'],
+                limit + 1,
+                before_time=(
+                    None if before_review_at is None
+                    else datetime.fromtimestamp(before_review_at)
+                ),
+                after_time=(
+                    None if after_review_at is None
+                    else datetime.fromtimestamp(after_review_at)
+                ),
+                order=order,
+                integrity_failures='delete_and_commit'
+            )
 
-        result = []
-        new_after_review_at = None
-        new_before_review_at = None
+            result = []
+            new_after_review_at = None
+            new_before_review_at = None
 
-        for (ev_uuid, ev_at, ev) in result_raw:
-            if len(result) == limit:
-                if order == 'asc':
-                    new_after_review_at = result[-1].review_at
+            for (ev_uuid, ev_at, ev) in result_raw:
+                if len(result) == limit:
+                    if order == 'asc':
+                        new_after_review_at = result[-1].review_at
+                    else:
+                        new_before_review_at = result[-1].review_at
                 else:
-                    new_before_review_at = result[-1].review_at
-            else:
-                result.append(
-                    TrustQueueItem(
-                        uuid=ev_uuid,
-                        username=ev['username'],
-                        review_at=ev_at.timestamp()
+                    result.append(
+                        TrustQueueItem(
+                            uuid=ev_uuid,
+                            username=ev['username'],
+                            review_at=ev_at.timestamp()
+                        )
                     )
+            
+            found_bad_user = False
+            for item in result:
+                usrs = Table('users')
+                itgs.read_cursor.execute(
+                    Query.from_(usrs).select(1)
+                    .where(usrs.username == Parameter('%s'))
+                    .get_sql(),
+                    (item.username,)
                 )
+                if itgs.read_cursor.fetchone() is None:
+                    found_bad_user = True
+                    lbshared.delayed_queue.delete_event(itgs, item.uuid, commit=False)
+                    itgs.logger.print(
+                        Level.INFO,
+                        'Deleted trust queue item for nonexistent user {}',
+                        item.username
+                    )
+            
+            if found_bad_user:
+                itgs.write_conn.commit()
+                continue
 
-        headers['Cache-Control'] = 'no-store'
-        return JSONResponse(
-            status_code=200,
-            content=TrustQueueResponse(
-                queue=result,
-                after_review_at=new_after_review_at,
-                before_review_at=new_before_review_at
-            ).dict(),
-            headers=headers
-        )
+            headers['Cache-Control'] = 'no-store'
+            return JSONResponse(
+                status_code=200,
+                content=TrustQueueResponse(
+                    queue=result,
+                    after_review_at=new_after_review_at,
+                    before_review_at=new_before_review_at
+                ).dict(),
+                headers=headers
+            )
 
 
 @router.put(
